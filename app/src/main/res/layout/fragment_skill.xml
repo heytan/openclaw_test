@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="24dp"
+    android:paddingBottom="24dp">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/tv_skill_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/skill_title"
+        android:textColor="@color/text_primary"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Empty state hint -->
+    <TextView
+        android:id="@+id/tv_skill_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/skill_empty"
+        android:textColor="@color/text_hint"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_marginTop="40dp"
+        android:visibility="gone" />
+
+    <!-- RecyclerView for skill list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_skill_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp" />
+
+</LinearLayout>

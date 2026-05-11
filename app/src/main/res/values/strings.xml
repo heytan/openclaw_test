@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DiDiClaw</string>
+
+    <!-- Tab labels -->
+    <string name="tab_persona">人设</string>
+    <string name="tab_skill">技能</string>
+    <string name="tab_memory">记忆</string>
+
+    <!-- Persona tab -->
+    <string name="persona_title">选择Agent身份</string>
+    <string name="persona_shixie">实干派</string>
+    <string name="persona_tiexin">贴心友人</string>
+    <string name="persona_quanneng">全能派</string>
+    <string name="voice_title">选择语音音色</string>
+    <string name="voice_standard_male">标准男声</string>
+    <string name="voice_standard_female">标准女声</string>
+    <string name="voice_gentle_female">温柔女声</string>
+    <string name="voice_calm_male">沉稳男声</string>
+
+    <!-- Skill tab -->
+    <string name="skill_title">Agent技能列表</string>
+    <string name="skill_empty">暂无技能数据</string>
+
+    <!-- Memory tab -->
+    <string name="memory_title">用户记忆记录</string>
+    <string name="memory_empty">暂无记忆记录</string>
+
+    <!-- Toast messages -->
+    <string name="toast_config_saved">配置已保存</string>
+    <string name="toast_config_failed">配置写入失败</string>
+    <string name="toast_permission_required">请授予文件读写权限</string>
+
+    <!-- Permission -->
+    <string name="permission_title">需要存储权限</string>
+    <string name="permission_message">为了读取和写入OpenClaw Agent配置文件，需要授予文件访问权限。</string>
+    <string name="permission_grant">授予权限</string>
+</resources>

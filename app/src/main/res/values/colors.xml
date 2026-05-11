@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary palette - light blue accent on white background -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="light_blue">#4A90D9</color>
+    <color name="light_blue_pressed">#3A7BC8</color>
+    <color name="light_blue_bg">#EBF2FA</color>
+
+    <!-- Text colors -->
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#5C5C5C</color>
+    <color name="text_hint">#999999</color>
+
+    <!-- Surface colors -->
+    <color name="surface">#F8F9FA</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_border">#E0E0E0</color>
+    <color name="card_selected_border">#4A90D9</color>
+    <color name="card_selected_background">#EBF2FA</color>
+
+    <!-- Divider -->
+    <color name="divider">#EEEEEE</color>
+</resources>

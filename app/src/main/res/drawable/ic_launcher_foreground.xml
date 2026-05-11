@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DiDiClaw 龙虾侧面轮廓图标 — 缩放到安全区域内 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group
+        android:scaleX="0.58"
+        android:scaleY="0.58"
+        android:pivotX="54"
+        android:pivotY="54">
+
+        <!-- 尾扇 -->
+        <path android:fillColor="#E85D3F" android:pathData="M20,48 L10,38 L8,48 L10,58 L20,52 Z" />
+        <path android:fillColor="#FF7A5C" android:pathData="M22,44 L12,36 L14,48 L12,58 L22,52 Z" />
+
+        <!-- 腹部（分段弧形） -->
+        <path android:fillColor="#FF6B4A" android:pathData="M22,48 C18,38 20,30 30,24 L36,22 L48,20 L60,22 L70,28 L72,36 L68,42 L58,46 L48,48 L36,50 L28,50 Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#E85D3F" android:strokeWidth="1.2" android:pathData="M28,46 Q30,34 38,26" />
+        <path android:fillColor="#00000000" android:strokeColor="#E85D3F" android:strokeWidth="1.2" android:pathData="M36,48 Q38,36 46,28" />
+        <path android:fillColor="#00000000" android:strokeColor="#E85D3F" android:strokeWidth="1.2" android:pathData="M44,48 Q46,38 52,30" />
+
+        <!-- 头部 -->
+        <path android:fillColor="#FF4A2A" android:pathData="M58,22 L70,18 L78,24 L80,32 L76,40 L68,44 L58,42 L54,36 L54,28 Z" />
+
+        <!-- 眼睛 -->
+        <path android:fillColor="#FFFFFF" android:pathData="M71,24 A5,5 0 1,1 81,24 A5,5 0 1,1 71,24 Z" />
+        <!-- 瞳孔 -->
+        <path android:fillColor="#1A0800" android:pathData="M74.5,24 A2.5,2.5 0 1,1 79.5,24 A2.5,2.5 0 1,1 74.5,24 Z" />
+        <!-- 高光 -->
+        <path android:fillColor="#FFFFFF" android:pathData="M77,23 A1,1 0 1,1 79,23 A1,1 0 1,1 77,23 Z" />
+
+        <!-- 触须 -->
+        <path android:fillColor="#00000000" android:strokeColor="#FF8C6E" android:strokeWidth="1.5" android:strokeLineCap="round" android:pathData="M80,22 Q90,14 98,12" />
+        <path android:fillColor="#00000000" android:strokeColor="#FF8C6E" android:strokeWidth="1.5" android:strokeLineCap="round" android:pathData="M82,26 Q94,20 102,22" />
+
+        <!-- 大螯 -->
+        <path android:fillColor="#E85D3F" android:strokeColor="#CC4420" android:strokeWidth="1" android:pathData="M72,36 L86,30 L92,26 L88,34 L94,32 L90,40 L84,40 L74,42 Z" />
+        <path android:fillColor="#FF7A5C" android:pathData="M76,34 L84,30 L88,36 L80,38 Z" />
+
+        <!-- 步足 -->
+        <path android:fillColor="#00000000" android:strokeColor="#E85D3F" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M36,48 L32,62 L28,72" />
+        <path android:fillColor="#00000000" android:strokeColor="#E85D3F" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M44,48 L42,64 L40,76" />
+        <path android:fillColor="#00000000" android:strokeColor="#E85D3F" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M52,46 L54,62 L56,72" />
+        <path android:fillColor="#00000000" android:strokeColor="#E85D3F" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M60,42 L64,56 L68,64" />
+
+    </group>
+</vector>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Force light theme for car head unit - no dark mode -->
+    <style name="Theme.OpenClawCar" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Force disable dark mode -->
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:windowBackground">@color/white</item>
+
+        <!-- Primary colors - light blue accent -->
+        <item name="colorPrimary">@color/light_blue</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/light_blue_bg</item>
+        <item name="colorOnPrimaryContainer">@color/light_blue</item>
+
+        <!-- Secondary -->
+        <item name="colorSecondary">@color/light_blue</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- Surface -->
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+
+        <!-- Background -->
+        <item name="android:colorBackground">@color/white</item>
+        <item name="colorOnBackground">@color/text_primary</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/light_blue</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- Tab text style - large enough for car touch screen -->
+    <style name="TabTextStyle" parent="TextAppearance.Design.Tab">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="textAllCaps">false</item>
+    </style>
+</resources>

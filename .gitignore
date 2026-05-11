@@ -1,0 +1,21 @@
+# Build outputs
+/app/build/
+/build/
+*.apk
+*.aab
+
+# IDE
+.idea/
+*.iml
+.gradle/
+
+# Local config
+local.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SDK & Gradle (installed on server, not part of project)
+/gradle-local/
+/android-sdk/

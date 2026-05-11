@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 全能派龙虾：侧面，聪明调皮 — 亮橘 + 眼镜 + 星星 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <path android:fillColor="#E05530" android:pathData="M30,52 L22,44 L20,52 L22,60 Z" />
+    <path android:fillColor="#FF7A5C" android:pathData="M32,48 L24,40 L26,52 L24,62 Z" />
+    <path android:fillColor="#FF6B4A" android:pathData="M32,52 C28,45 28,38 36,32 L42,28 L56,24 L66,24 L74,30 L76,38 L72,46 L60,50 L48,52 L38,52 Z" />
+    <path android:fillColor="#00000000" android:strokeColor="#E05530" android:strokeWidth="1" android:pathData="M38,48 Q38,40 44,32" />
+    <path android:fillColor="#00000000" android:strokeColor="#E05530" android:strokeWidth="1" android:pathData="M44,48 Q44,40 50,32" />
+    <path android:fillColor="#00000000" android:strokeColor="#E05530" android:strokeWidth="1" android:pathData="M52,48 Q52,40 58,32" />
+    <path android:fillColor="#E05530" android:pathData="M64,24 L74,22 L82,28 L84,36 L80,44 L72,48 L62,46 L58,40 L58,32 Z" />
+    <!-- 眼镜框 cx=80,cy=28,r=6 -->
+    <path android:fillColor="#00000000" android:strokeColor="#4169E1" android:strokeWidth="2" android:pathData="M74,28 A6,6 0 1,1 86,28 A6,6 0 1,1 74,28 Z" />
+    <!-- 眨眼（一条横线） -->
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="4" android:pathData="M77,27 L83,27" />
+    <!-- 瞳孔 cx=81,cy=28,r=2.5 -->
+    <path android:fillColor="#1A0800" android:pathData="M78.5,28 A2.5,2.5 0 1,1 83.5,28 A2.5,2.5 0 1,1 78.5,28 Z" />
+    <!-- 眼镜高光 -->
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="0.8" android:pathData="M76,25 L80,25" />
+    <path android:fillColor="#00000000" android:strokeColor="#A03020" android:strokeWidth="1.2" android:strokeLineCap="round" android:pathData="M64,42 Q68,46 72,42 L74,43" />
+    <path android:fillColor="#00000000" android:strokeColor="#FF8C6E" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M84,26 Q90,16 92,10" />
+    <path android:fillColor="#00000000" android:strokeColor="#FF8C6E" android:strokeWidth="1.8" android:strokeLineCap="round" android:pathData="M86,30 Q96,24 100,28" />
+    <path android:fillColor="#E05530" android:strokeColor="#B83820" android:strokeWidth="0.8" android:pathData="M74,42 L86,36 L92,32 L88,40 L94,38 L90,46 L84,46 L76,48 Z" />
+    <path android:fillColor="#FFD700" android:pathData="M90,36 L91,33 L92,36 L95,36 L93,38 L94,41 L91,39 L88,41 L89,38 L87,36 Z" />
+    <path android:fillColor="#4169E1" android:pathData="M62,20 L72,16 L82,20 L72,24 Z" />
+    <path android:fillColor="#FFD700" android:pathData="M70,18 L74,18 L72,13 Z" />
+    <path android:fillColor="#00000000" android:strokeColor="#E05530" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M42,48 L38,62 L34,72" />
+    <path android:fillColor="#00000000" android:strokeColor="#E05530" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M50,48 L48,64 L46,76" />
+    <path android:fillColor="#00000000" android:strokeColor="#E05530" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M58,46 L60,60 L62,68" />
+</vector>
