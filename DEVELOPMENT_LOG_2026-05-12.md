@@ -76,3 +76,19 @@
 | 点击全能派 | SOUL.md 更新为 2029B |
 | 音色选择 | UI 状态持久保持，TTS 语音预览正常 |
 | 调试/生产切换 | 开关文字颜色变化清晰，重启后可正常加载 |
+| 技能页生产模式 | 正确读取 SKILL.md，展示车载控制命令 |
+| 记忆页生产模式 | 正确读取 USER.md |
+
+---
+
+## 六、技能/记忆页面接入 Agent
+
+生产模式下，App 直读 Agent 工作区文件：
+
+| 标签页 | 文件 | 全路径 |
+|--------|------|--------|
+| 人设 | SOUL.md | `/data/local/tmp/openclaw-home/.openclaw/workspace/SOUL.md` |
+| 技能 | SKILL.md | `/data/local/tmp/openclaw-home/.openclaw/workspace/SKILL.md` |
+| 记忆 | USER.md | `/data/local/tmp/openclaw-home/.openclaw/workspace/USER.md` |
+
+三个文件统一在同一工作区目录下，调试模式不受影响。
