@@ -90,26 +90,20 @@ class PersonaFragment : Fragment() {
     private fun selectPersona(index: Int) {
         val context = requireContext()
         val prompt = FileHelper.getPersonaPrompt(index)
-        val success = FileHelper.writeFile(FileHelper.personaFilePath, prompt)
-        if (success) {
-            selectedPersonaIndex = index
-            updatePersonaCardUI(index)
-            PreferenceHelper.saveLastPersona(context, index)
-        }
+        FileHelper.writeFile(FileHelper.personaFilePath, prompt)
+        selectedPersonaIndex = index
+        updatePersonaCardUI(index)
+        PreferenceHelper.saveLastPersona(context, index)
     }
 
     private fun selectVoice(index: Int) {
         val context = requireContext()
-        // Preview the voice sound first
         previewVoice(index)
-        // Then save the config
         val config = FileHelper.getVoiceConfig(index)
-        val success = FileHelper.writeFile(FileHelper.voiceConfigFilePath, config)
-        if (success) {
-            selectedVoiceIndex = index
-            updateVoiceButtonUI(index)
-            PreferenceHelper.saveLastVoice(context, index)
-        }
+        FileHelper.writeFile(FileHelper.voiceConfigFilePath, config)
+        selectedVoiceIndex = index
+        updateVoiceButtonUI(index)
+        PreferenceHelper.saveLastVoice(context, index)
     }
 
     private fun updatePersonaCardUI(selectedIndex: Int) {

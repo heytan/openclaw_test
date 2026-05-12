@@ -9,20 +9,34 @@ object FileHelper {
 
     private var appContext: Context? = null
 
+    // Agent's SOUL.md path — app writes directly (requires SELinux permissive)
+    const val AGENT_SOUL_PATH =
+        "/data/local/tmp/openclaw-home/.openclaw/workspace/SOUL.md"
+
+    // Asset file names for each persona
+    private val PERSONA_ASSETS = arrayOf(
+        "persona/0_shixie.md",
+        "persona/1_tiexin.md",
+        "persona/2_quanneng.md"
+    )
+
     // Base dir for current mode
     private fun baseDir(): File {
         val ctx = appContext ?: throw IllegalStateException("FileHelper.init() must be called first")
         return if (DEBUG_MODE) {
             File(ctx.filesDir, "openclaw_debug")
         } else {
-            // Uses Android API — no permissions needed, car-safe
             File(ctx.getExternalFilesDir(null), "openclaw")
         }
     }
 
     // Path accessors
     val personaFilePath: String
-        get() = File(baseDir(), "agent/persona.txt").absolutePath
+        get() = if (DEBUG_MODE) {
+            File(baseDir(), "agent/persona.txt").absolutePath
+        } else {
+            AGENT_SOUL_PATH
+        }
 
     val voiceConfigFilePath: String
         get() = File(baseDir(), "tts/voice_config.txt").absolutePath
@@ -33,8 +47,8 @@ object FileHelper {
     val memoryFilePath: String
         get() = File(baseDir(), "agent/memory.txt").absolutePath
 
-    // Built-in persona prompts (per spec section 5.2)
-    private val PERSONA_PROMPTS = mapOf(
+    // Short prompts for debug mode (kept in-app, no file I/O needed)
+    private val DEBUG_PROMPTS = mapOf(
         0 to "你是一个务实高效的助手，专注解决问题，回答简洁直接，不冗余",
         1 to "你是一个温暖贴心的朋友，语气亲切柔和，善于倾听和安慰",
         2 to "你是一个全能助手，精通各类知识，能解答问题、提供建议、辅助决策"
@@ -47,19 +61,36 @@ object FileHelper {
         3 to "calm_male"
     )
 
-    fun getPersonaPrompt(index: Int): String = PERSONA_PROMPTS[index] ?: PERSONA_PROMPTS[0]!!
+    /**
+     * Get persona prompt content.
+     * - Debug mode: returns built-in short prompt
+     * - Production mode: reads the full persona markdown from assets
+     */
+    fun getPersonaPrompt(index: Int): String {
+        if (DEBUG_MODE) {
+            return DEBUG_PROMPTS[index] ?: DEBUG_PROMPTS[0]!!
+        }
+        val ctx = appContext ?: return DEBUG_PROMPTS[index] ?: DEBUG_PROMPTS[0]!!
+        val assetPath = PERSONA_ASSETS[index % PERSONA_ASSETS.size]
+        return try {
+            ctx.assets.open(assetPath).bufferedReader(Charsets.UTF_8).readText()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            DEBUG_PROMPTS[index] ?: DEBUG_PROMPTS[0]!!
+        }
+    }
 
     fun getVoiceConfig(index: Int): String = VOICE_CONFIGS[index] ?: VOICE_CONFIGS[0]!!
 
     /**
-     * Initialize storage for current mode. In debug mode, pre-populates sample data.
+     * Initialize storage. In debug mode, pre-populates sample data.
      */
     fun init(context: Context) {
         appContext = context.applicationContext
-        baseDir().mkdirs()
-        File(baseDir(), "agent").mkdirs()
-        File(baseDir(), "tts").mkdirs()
         if (DEBUG_MODE) {
+            baseDir().mkdirs()
+            File(baseDir(), "agent").mkdirs()
+            File(baseDir(), "tts").mkdirs()
             writeSampleData()
         }
     }
