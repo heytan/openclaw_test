@@ -12,6 +12,9 @@
 # Local config
 local.properties
 
+# Local notes (not part of project)
+SYSTEM_PROFILE_*.md
+
 # OS
 .DS_Store
 Thumbs.db
