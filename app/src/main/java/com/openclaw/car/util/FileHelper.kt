@@ -9,9 +9,11 @@ object FileHelper {
 
     private var appContext: Context? = null
 
-    // Agent's SOUL.md path — app writes directly (requires SELinux permissive)
-    const val AGENT_SOUL_PATH =
-        "/data/local/tmp/openclaw-home/.openclaw/workspace/SOUL.md"
+    // Agent workspace paths (read/write directly, requires SELinux permissive)
+    private const val AGENT_WORKSPACE = "/data/local/tmp/openclaw-home/.openclaw/workspace"
+    const val AGENT_SOUL_PATH = "$AGENT_WORKSPACE/SOUL.md"
+    private const val AGENT_SKILL_PATH = "$AGENT_WORKSPACE/SKILL.md"
+    private const val AGENT_USER_PATH = "$AGENT_WORKSPACE/USER.md"
 
     // Asset file names for each persona
     private val PERSONA_ASSETS = arrayOf(
@@ -42,10 +44,10 @@ object FileHelper {
         get() = File(baseDir(), "tts/voice_config.txt").absolutePath
 
     val skillFilePath: String
-        get() = File(baseDir(), "agent/skills.txt").absolutePath
+        get() = if (DEBUG_MODE) File(baseDir(), "agent/skills.txt").absolutePath else AGENT_SKILL_PATH
 
     val memoryFilePath: String
-        get() = File(baseDir(), "agent/memory.txt").absolutePath
+        get() = if (DEBUG_MODE) File(baseDir(), "agent/memory.txt").absolutePath else AGENT_USER_PATH
 
     // Short prompts for debug mode (kept in-app, no file I/O needed)
     private val DEBUG_PROMPTS = mapOf(
