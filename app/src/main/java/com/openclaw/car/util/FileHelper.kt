@@ -12,7 +12,7 @@ object FileHelper {
     // Agent workspace paths (read/write directly, requires SELinux permissive)
     private const val AGENT_WORKSPACE = "/data/local/tmp/openclaw-home/.openclaw/workspace"
     const val AGENT_SOUL_PATH = "$AGENT_WORKSPACE/SOUL.md"
-    private const val AGENT_USER_PATH = "$AGENT_WORKSPACE/USER.md"
+    private const val AGENT_USER_PATH = "$AGENT_WORKSPACE/MEMORY.md"
     private const val PLUGIN_SKILLS_DIR = "/data/local/tmp/openclaw-home/.openclaw/plugin-skills"
 
     // Asset file names for each persona
