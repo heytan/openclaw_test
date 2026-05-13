@@ -5,15 +5,15 @@ import java.io.File
 
 object FileHelper {
 
-    var DEBUG_MODE = true
+    var DEBUG_MODE = false
 
     private var appContext: Context? = null
 
     // Agent workspace paths (read/write directly, requires SELinux permissive)
     private const val AGENT_WORKSPACE = "/data/local/tmp/openclaw-home/.openclaw/workspace"
     const val AGENT_SOUL_PATH = "$AGENT_WORKSPACE/SOUL.md"
-    private const val AGENT_SKILL_PATH = "$AGENT_WORKSPACE/SKILL.md"
     private const val AGENT_USER_PATH = "$AGENT_WORKSPACE/USER.md"
+    private const val PLUGIN_SKILLS_DIR = "/data/local/tmp/openclaw-home/.openclaw/plugin-skills"
 
     // Asset file names for each persona
     private val PERSONA_ASSETS = arrayOf(
@@ -42,9 +42,6 @@ object FileHelper {
 
     val voiceConfigFilePath: String
         get() = File(baseDir(), "tts/voice_config.txt").absolutePath
-
-    val skillFilePath: String
-        get() = if (DEBUG_MODE) File(baseDir(), "agent/skills.txt").absolutePath else AGENT_SKILL_PATH
 
     val memoryFilePath: String
         get() = if (DEBUG_MODE) File(baseDir(), "agent/memory.txt").absolutePath else AGENT_USER_PATH
@@ -83,6 +80,106 @@ object FileHelper {
     }
 
     fun getVoiceConfig(index: Int): String = VOICE_CONFIGS[index] ?: VOICE_CONFIGS[0]!!
+
+    /**
+     * Read full SKILL.md content for a given skill name.
+     */
+    fun getSkillDetail(name: String): String {
+        if (DEBUG_MODE) return "调试模式下无详细技能说明"
+        val file = File("$PLUGIN_SKILLS_DIR/$name/SKILL.md")
+        return try {
+            if (!file.exists()) "(技能文件不存在)"
+            else file.readText(Charsets.UTF_8)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "(读取失败)"
+        }
+    }
+
+    /**
+     * Get skill list for display.
+     * - Debug mode: reads from built-in sample data
+     * - Production mode: enumerates plugin-skills/ directories, parses SKILL.md frontmatter
+     * Returns list of "name：description" lines.
+     */
+    fun getSkills(): List<String> {
+        if (DEBUG_MODE) {
+            return readLines(File(baseDir(), "agent/skills.txt").absolutePath)
+        }
+        return enumeratePluginSkills()
+    }
+
+    private fun enumeratePluginSkills(): List<String> {
+        val result = mutableListOf<String>()
+        val pluginsDir = File(PLUGIN_SKILLS_DIR)
+        if (!pluginsDir.exists() || !pluginsDir.isDirectory) return result
+        val dirs = pluginsDir.listFiles { f -> f.isDirectory } ?: return result
+        for (dir in dirs.sortedBy { it.name }) {
+            val skillMd = File(dir, "SKILL.md")
+            if (!skillMd.exists()) continue
+            val frontmatter = parseFrontmatter(skillMd)
+            val name = frontmatter["name"] ?: dir.name
+            val desc = frontmatter["description"] ?: ""
+            result.add("${name}：${desc}")
+        }
+        return result
+    }
+
+    /**
+     * Parse YAML frontmatter from a SKILL.md file.
+     * Extracts key-value pairs between the first pair of --- markers.
+     * Handles both inline values and multi-line block scalars (|).
+     */
+    private fun parseFrontmatter(file: File): Map<String, String> {
+        val result = mutableMapOf<String, String>()
+        try {
+            val lines = file.readLines(Charsets.UTF_8)
+            if (lines.isEmpty() || lines[0].trim() != "---") return result
+            var multiLineKey: String? = null
+            val multiLineBuf = StringBuilder()
+            for (line in lines.drop(1)) {
+                if (line.trim() == "---") break
+
+                // If currently collecting a multi-line value
+                if (multiLineKey != null) {
+                    val trimmed = line.trim()
+                    // Check if this is a new key (not indented continuation)
+                    if (trimmed.contains(":") && !line.startsWith(" ") && !line.startsWith("\t")) {
+                        // Save previous multi-line value
+                        result[multiLineKey] = multiLineBuf.toString().trim()
+                        multiLineKey = null
+                        multiLineBuf.clear()
+                        // Fall through to parse this new key
+                    } else {
+                        if (trimmed.isNotEmpty()) {
+                            if (multiLineBuf.isNotEmpty()) multiLineBuf.append(" ")
+                            multiLineBuf.append(trimmed)
+                        }
+                        continue
+                    }
+                }
+
+                val parts = line.split(":", limit = 2)
+                if (parts.size < 2) continue
+                val key = parts[0].trim()
+                var value = parts[1].trim().trim('"').trim('\'')
+                if (value == "|") {
+                    // Start of a multi-line block scalar
+                    multiLineKey = key
+                    multiLineBuf.clear()
+                } else if (value.isNotEmpty()) {
+                    result[key] = value
+                }
+            }
+            // Don't forget last multi-line value
+            if (multiLineKey != null && multiLineBuf.isNotEmpty()) {
+                result[multiLineKey] = multiLineBuf.toString().trim()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return result
+    }
 
     /**
      * Initialize storage. In debug mode, pre-populates sample data.
