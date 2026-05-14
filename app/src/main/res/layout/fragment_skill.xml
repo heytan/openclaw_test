@@ -4,8 +4,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/white"
-    android:paddingStart="24dp"
-    android:paddingEnd="24dp"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp"
     android:paddingTop="24dp"
     android:paddingBottom="24dp">
 

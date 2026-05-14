@@ -20,4 +20,14 @@
 
     <!-- Divider -->
     <color name="divider">#EEEEEE</color>
+
+    <!-- Skill card colors by category -->
+    <color name="skill_car_bg">#EBF2FA</color>
+    <color name="skill_car_accent">#4A90D9</color>
+    <color name="skill_feishu_bg">#E8F5E9</color>
+    <color name="skill_feishu_accent">#43A047</color>
+    <color name="skill_qq_bg">#FFF3E0</color>
+    <color name="skill_qq_accent">#F57C00</color>
+    <color name="skill_tool_bg">#F3E5F5</color>
+    <color name="skill_tool_accent">#8E24AA</color>
 </resources>

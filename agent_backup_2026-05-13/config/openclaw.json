@@ -1,0 +1,99 @@
+{
+  "env": {
+    "ZAI_API_KEY": "b30e917b73334579b34903071f753b89.kgJ12xYP3JFr5hqp"
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "zai/glm-4.7"
+      },
+      "models": {
+        "zai/MiniCPM-o-4_5-Q4_K_M.gguf": {},
+        "zai/glm-4.7": {}
+      },
+      "compaction": {
+        "reserveTokensFloor": 4000
+      }
+    }
+  },
+  "gateway": {
+    "mode": "local",
+    "port": 18801,
+    "bind": "lan",
+    "controlUi": {
+      "allowedOrigins": [
+        "http://localhost:18801",
+        "http://127.0.0.1:18801",
+        "http://172.20.10.4:18801",
+        "http://172.20.10.5:18801",
+        "http://172.20.10.6:18801"
+      ]
+    },
+    "auth": {
+      "mode": "token",
+      "token": "fe3936a8d8dafeec8efb6d801863eb00c4c08298555a4817"
+    },
+    "http": {
+      "endpoints": {
+        "chatCompletions": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "channels": {
+    "feishu": {
+      "enabled": true,
+      "accounts": {
+        "default": {
+          "appId": "cli_a9658c749eb81cc5",
+          "appSecret": "lfTd3y2Dw3X083iB5g0nDfHbAxfdaibO",
+          "domain": "feishu"
+        }
+      }
+    },
+    "qqbot": {
+      "enabled": true,
+      "appId": "1903994541",
+      "clientSecret": "BICtNegU4QXQ4Uge",
+      "stt": {
+        "enabled": true,
+        "provider": "openai",
+        "baseUrl": "http://172.20.10.5:8090/v1",
+        "apiKey": "not-needed",
+        "model": "large-v3"
+      },
+      "tts": {
+        "provider": "openai",
+        "voice": "zh-CN-XiaoxiaoNeural",
+        "auto": "inbound"
+      }
+    }
+  },
+  "talk": {
+    "provider": "openai",
+    "providers": {
+      "openai": {
+        "apiKey": "not-needed",
+        "baseUrl": "http://172.20.10.5:8091/v1",
+        "voiceId": "zh-CN-XiaoxiaoNeural"
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "zai": {
+        "enabled": true
+      }
+    },
+    "allow": [
+      "zai",
+      "feishu",
+      "qqbot"
+    ]
+  },
+  "meta": {
+    "lastTouchedVersion": "2026.5.7",
+    "lastTouchedAt": "2026-05-13T05:24:25.027Z"
+  }
+}
