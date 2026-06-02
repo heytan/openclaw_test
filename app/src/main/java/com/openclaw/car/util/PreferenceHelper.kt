@@ -3,15 +3,14 @@ package com.openclaw.car.util
 import android.content.Context
 import android.content.SharedPreferences
 
-/**
- * Lightweight state persistence using SharedPreferences.
- * Remembers the user's last-selected persona and voice across app restarts.
- */
 object PreferenceHelper {
 
     private const val PREFS_NAME = "openclaw_car_prefs"
     private const val KEY_LAST_PERSONA_INDEX = "last_persona_index"
     private const val KEY_LAST_VOICE_INDEX = "last_voice_index"
+    private const val KEY_LAST_DIALECT = "last_dialect"
+    private const val KEY_CUSTOM_VOICE_TEXT = "custom_voice_text"
+    private const val KEY_VOICE_MODE = "voice_mode" // "preset" or "custom"
 
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -31,5 +30,29 @@ object PreferenceHelper {
 
     fun getLastVoice(context: Context): Int {
         return getPrefs(context).getInt(KEY_LAST_VOICE_INDEX, 0)
+    }
+
+    fun saveLastDialect(context: Context, dialect: String) {
+        getPrefs(context).edit().putString(KEY_LAST_DIALECT, dialect).apply()
+    }
+
+    fun getLastDialect(context: Context): String {
+        return getPrefs(context).getString(KEY_LAST_DIALECT, "") ?: ""
+    }
+
+    fun saveCustomVoiceText(context: Context, text: String) {
+        getPrefs(context).edit().putString(KEY_CUSTOM_VOICE_TEXT, text).apply()
+    }
+
+    fun getCustomVoiceText(context: Context): String {
+        return getPrefs(context).getString(KEY_CUSTOM_VOICE_TEXT, "") ?: ""
+    }
+
+    fun saveVoiceMode(context: Context, mode: String) {
+        getPrefs(context).edit().putString(KEY_VOICE_MODE, mode).apply()
+    }
+
+    fun getVoiceMode(context: Context): String {
+        return getPrefs(context).getString(KEY_VOICE_MODE, "preset") ?: "preset"
     }
 }

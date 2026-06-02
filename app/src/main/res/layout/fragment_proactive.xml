@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+
+    <!-- Card 1 -->
+    <LinearLayout
+        android:id="@+id/row_1"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:layout_marginBottom="6dp">
+
+        <FrameLayout
+            android:id="@+id/card_1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:foreground="?attr/selectableItemBackground"
+            android:background="@drawable/scene_card_bg">
+
+            <ImageView
+                android:id="@+id/iv_scene_1"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/scene_1"
+                android:scaleType="centerInside"
+                android:contentDescription="Scene 1" />
+
+            <View
+                android:id="@+id/overlay_1"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#334A90D9"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/iv_check_1"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:src="@drawable/ic_check_red"
+                android:visibility="gone"
+                android:contentDescription="selected" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/tv_desc_1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0"
+            android:background="#F5F5F5"
+            android:gravity="center_vertical"
+            android:padding="10dp"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:lineSpacingExtra="2dp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Card 2 -->
+    <LinearLayout
+        android:id="@+id/row_2"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:layout_marginBottom="6dp">
+
+        <FrameLayout
+            android:id="@+id/card_2"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:foreground="?attr/selectableItemBackground"
+            android:background="@drawable/scene_card_bg">
+
+            <ImageView
+                android:id="@+id/iv_scene_2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/scene_2"
+                android:scaleType="centerInside"
+                android:contentDescription="Scene 2" />
+
+            <View
+                android:id="@+id/overlay_2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#334A90D9"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/iv_check_2"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:src="@drawable/ic_check_red"
+                android:visibility="gone"
+                android:contentDescription="selected" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/tv_desc_2"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0"
+            android:background="#F5F5F5"
+            android:gravity="center_vertical"
+            android:padding="10dp"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:lineSpacingExtra="2dp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Card 3 -->
+    <LinearLayout
+        android:id="@+id/row_3"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:id="@+id/card_3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:foreground="?attr/selectableItemBackground"
+            android:background="@drawable/scene_card_bg">
+
+            <ImageView
+                android:id="@+id/iv_scene_3"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/scene_3"
+                android:scaleType="centerInside"
+                android:contentDescription="Scene 3" />
+
+            <View
+                android:id="@+id/overlay_3"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#334A90D9"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/iv_check_3"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:src="@drawable/ic_check_red"
+                android:visibility="gone"
+                android:contentDescription="selected" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/tv_desc_3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0"
+            android:background="#F5F5F5"
+            android:gravity="center_vertical"
+            android:padding="10dp"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:lineSpacingExtra="2dp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -204,93 +204,85 @@
             android:textStyle="bold"
             android:layout_marginBottom="16dp" />
 
-        <!-- Voice buttons: 2x2 grid -->
-        <LinearLayout
+        <!-- Voice presets list -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_voice_list"
+            android:layout_width="match_parent"
+            android:layout_height="280dp"
+            android:scrollbars="vertical" />
+
+        <!-- Section divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider"
+            android:layout_marginTop="28dp"
+            android:layout_marginBottom="28dp" />
+
+        <!-- ========== Dialect Selection Section ========== -->
+        <TextView
+            android:id="@+id/tv_dialect_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/dialect_title"
+            android:textColor="@color/text_primary"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_dialect"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            app:singleSelection="true"
+            app:chipSpacingHorizontal="8dp"
+            app:chipSpacingVertical="4dp" />
 
-            <LinearLayout
+        <!-- Section divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider"
+            android:layout_marginTop="28dp"
+            android:layout_marginBottom="28dp" />
+
+        <!-- ========== Custom Voice Text Section ========== -->
+        <TextView
+            android:id="@+id/tv_custom_voice_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/custom_voice_title"
+            android:textColor="@color/text_primary"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_custom_voice"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/custom_voice_hint"
+            app:counterEnabled="true"
+            app:counterMaxLength="50">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_custom_voice"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="10dp">
+                android:maxLength="50"
+                android:maxLines="2"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/rb_voice_standard_male"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:text="@string/voice_standard_male"
-                    android:textSize="15sp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    app:icon="@drawable/ic_speaker"
-                    app:iconGravity="textStart"
-                    app:iconSize="18dp"
-                    app:iconTint="@null"
-                    />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/rb_voice_standard_female"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_weight="1"
-                    android:text="@string/voice_standard_female"
-                    android:textSize="15sp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    app:icon="@drawable/ic_speaker"
-                    app:iconGravity="textStart"
-                    app:iconSize="18dp"
-                    app:iconTint="@null"
-                    />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/rb_voice_gentle_female"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:text="@string/voice_gentle_female"
-                    android:textSize="15sp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    app:icon="@drawable/ic_speaker"
-                    app:iconGravity="textStart"
-                    app:iconSize="18dp"
-                    app:iconTint="@null"
-                    />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/rb_voice_calm_male"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_weight="1"
-                    android:text="@string/voice_calm_male"
-                    android:textSize="15sp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    app:icon="@drawable/ic_speaker"
-                    app:iconGravity="textStart"
-                    app:iconSize="18dp"
-                    app:iconTint="@null"
-                    />
-
-            </LinearLayout>
-        </LinearLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_apply_custom_voice"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/btn_apply"
+            android:textSize="14sp"
+            android:layout_gravity="end" />
 
     </LinearLayout>
 </ScrollView>

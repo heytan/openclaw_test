@@ -3,26 +3,43 @@ package com.openclaw.car.util
 import android.content.Context
 import java.io.File
 
+data class VoicePreset(
+    val label: String,
+    val refAudio: String,
+    val cfgValue: Double,
+    val temperature: Double,
+    val promptText: String = ""
+)
+
 object FileHelper {
 
     var DEBUG_MODE = false
 
     private var appContext: Context? = null
 
-    // Agent workspace paths (read/write directly, requires SELinux permissive)
     private const val AGENT_WORKSPACE = "/data/local/tmp/openclaw-home/.openclaw/workspace"
     const val AGENT_SOUL_PATH = "$AGENT_WORKSPACE/SOUL.md"
     private const val AGENT_USER_PATH = "$AGENT_WORKSPACE/MEMORY.md"
-    private const val PLUGIN_SKILLS_DIR = "/data/local/tmp/openclaw-home/.openclaw/plugin-skills"
+    private const val PLUGIN_SKILLS_DIR = "/data/local/tmp/openclaw-home/.openclaw/skills"
 
-    // Asset file names for each persona
     private val PERSONA_ASSETS = arrayOf(
         "persona/0_shixie.md",
         "persona/1_tiexin.md",
         "persona/2_quanneng.md"
     )
 
-    // Base dir for current mode
+    val VOICE_PRESETS = mapOf(
+        0 to VoicePreset("活泼女声", "voice_samples/活泼女声.wav", 2.5, 0.5, "活泼女声，明亮欢快"),
+        1 to VoicePreset("明亮女声", "voice_samples/明亮女声.wav", 2.5, 0.5, "明亮女声，清脆悦耳"),
+        2 to VoicePreset("磁性男声", "voice_samples/磁性男声.wav", 2.5, 0.5, "磁性男声，低沉浑厚")
+    )
+
+    val DIALECT_OPTIONS = listOf(
+        "",
+        "四川话",
+        "粤语"
+    )
+
     private fun baseDir(): File {
         val ctx = appContext ?: throw IllegalStateException("FileHelper.init() must be called first")
         return if (DEBUG_MODE) {
@@ -32,7 +49,6 @@ object FileHelper {
         }
     }
 
-    // Path accessors
     val personaFilePath: String
         get() = if (DEBUG_MODE) {
             File(baseDir(), "agent/persona.txt").absolutePath
@@ -46,25 +62,15 @@ object FileHelper {
     val memoryFilePath: String
         get() = if (DEBUG_MODE) File(baseDir(), "agent/memory.txt").absolutePath else AGENT_USER_PATH
 
-    // Short prompts for debug mode (kept in-app, no file I/O needed)
     private val DEBUG_PROMPTS = mapOf(
         0 to "你是一个务实高效的助手，专注解决问题，回答简洁直接，不冗余",
         1 to "你是一个温暖贴心的朋友，语气亲切柔和，善于倾听和安慰",
         2 to "你是一个全能助手，精通各类知识，能解答问题、提供建议、辅助决策"
     )
 
-    private val VOICE_CONFIGS = mapOf(
-        0 to "standard_male",
-        1 to "standard_female",
-        2 to "gentle_female",
-        3 to "calm_male"
-    )
+    fun getVoicePreset(index: Int): VoicePreset =
+        VOICE_PRESETS[index] ?: VOICE_PRESETS[0]!!
 
-    /**
-     * Get persona prompt content.
-     * - Debug mode: returns built-in short prompt
-     * - Production mode: reads the full persona markdown from assets
-     */
     fun getPersonaPrompt(index: Int): String {
         if (DEBUG_MODE) {
             return DEBUG_PROMPTS[index] ?: DEBUG_PROMPTS[0]!!
@@ -79,11 +85,15 @@ object FileHelper {
         }
     }
 
-    fun getVoiceConfig(index: Int): String = VOICE_CONFIGS[index] ?: VOICE_CONFIGS[0]!!
+    fun getVoiceConfig(index: Int): String {
+        return getVoicePreset(index).label
+    }
 
-    /**
-     * Read full SKILL.md content for a given skill name.
-     */
+    fun buildDialectPromptForLlm(dialect: String): String {
+        if (dialect.isBlank()) return ""
+        return "\n\n## 方言要求\n请用${dialect}回复"
+    }
+
     fun getSkillDetail(name: String): String {
         if (DEBUG_MODE) return "调试模式下无详细技能说明"
         val file = File("$PLUGIN_SKILLS_DIR/$name/SKILL.md")
@@ -96,12 +106,6 @@ object FileHelper {
         }
     }
 
-    /**
-     * Get skill list for display.
-     * - Debug mode: reads from built-in sample data
-     * - Production mode: enumerates plugin-skills/ directories, parses SKILL.md frontmatter
-     * Returns list of "name：description" lines.
-     */
     fun getSkills(): List<String> {
         if (DEBUG_MODE) {
             return readLines(File(baseDir(), "agent/skills.txt").absolutePath)
@@ -125,11 +129,6 @@ object FileHelper {
         return result
     }
 
-    /**
-     * Parse YAML frontmatter from a SKILL.md file.
-     * Extracts key-value pairs between the first pair of --- markers.
-     * Handles both inline values and multi-line block scalars (|).
-     */
     private fun parseFrontmatter(file: File): Map<String, String> {
         val result = mutableMapOf<String, String>()
         try {
@@ -139,17 +138,12 @@ object FileHelper {
             val multiLineBuf = StringBuilder()
             for (line in lines.drop(1)) {
                 if (line.trim() == "---") break
-
-                // If currently collecting a multi-line value
                 if (multiLineKey != null) {
                     val trimmed = line.trim()
-                    // Check if this is a new key (not indented continuation)
                     if (trimmed.contains(":") && !line.startsWith(" ") && !line.startsWith("\t")) {
-                        // Save previous multi-line value
                         result[multiLineKey] = multiLineBuf.toString().trim()
                         multiLineKey = null
                         multiLineBuf.clear()
-                        // Fall through to parse this new key
                     } else {
                         if (trimmed.isNotEmpty()) {
                             if (multiLineBuf.isNotEmpty()) multiLineBuf.append(" ")
@@ -158,20 +152,17 @@ object FileHelper {
                         continue
                     }
                 }
-
                 val parts = line.split(":", limit = 2)
                 if (parts.size < 2) continue
                 val key = parts[0].trim()
                 var value = parts[1].trim().trim('"').trim('\'')
                 if (value == "|") {
-                    // Start of a multi-line block scalar
                     multiLineKey = key
                     multiLineBuf.clear()
                 } else if (value.isNotEmpty()) {
                     result[key] = value
                 }
             }
-            // Don't forget last multi-line value
             if (multiLineKey != null && multiLineBuf.isNotEmpty()) {
                 result[multiLineKey] = multiLineBuf.toString().trim()
             }
@@ -181,9 +172,6 @@ object FileHelper {
         return result
     }
 
-    /**
-     * Initialize storage. In debug mode, pre-populates sample data.
-     */
     fun init(context: Context) {
         appContext = context.applicationContext
         if (DEBUG_MODE) {
@@ -228,7 +216,6 @@ object FileHelper {
         }
     }
 
-    // Sample data for debug verification
     private const val SAMPLE_SKILLS = """
 导航助手：提供实时路线规划、路况播报和周边兴趣点搜索
 语音控制：支持免唤醒语音指令，可控制空调、车窗、音乐等车载功能

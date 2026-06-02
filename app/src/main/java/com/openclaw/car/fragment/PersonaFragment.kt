@@ -1,35 +1,42 @@
 package com.openclaw.car.fragment
 
-import android.content.Context
-import android.os.Bundle
-import android.speech.tts.TextToSpeech
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.cardview.widget.CardView
+import android.os.Bundle
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
+import com.google.android.material.textfield.TextInputEditText
 import com.openclaw.car.R
+import com.openclaw.car.adapter.VoicePresetAdapter
+import com.openclaw.car.audio.AudioPreviewPlayer
+import com.openclaw.car.network.TtsApiClient
 import com.openclaw.car.util.FileHelper
 import com.openclaw.car.util.PreferenceHelper
-import java.util.Locale
+import java.util.concurrent.Executors
 
 class PersonaFragment : Fragment() {
 
     private val personaCards = mutableListOf<CardView>()
-    private val voiceButtons = mutableListOf<MaterialButton>()
     private var selectedPersonaIndex = 0
     private var selectedVoiceIndex = 0
-    private var tts: TextToSpeech? = null
+    private var currentDialect = ""
+    private var isCustomVoice = false
 
-    // Voice TTS parameters: pitch, rate for each of the 4 voices
-    private val voiceParams = arrayOf(
-        floatArrayOf(1.0f, 1.0f),    // 标准男声
-        floatArrayOf(1.15f, 0.95f),  // 标准女声
-        floatArrayOf(1.25f, 0.82f),  // 温柔女声
-        floatArrayOf(0.88f, 0.85f)   // 沉稳男声
-    )
+    private lateinit var chipGroupDialect: ChipGroup
+    private lateinit var etCustomVoice: TextInputEditText
+    private lateinit var btnApplyCustomVoice: MaterialButton
+    private lateinit var rvVoiceList: RecyclerView
+    private lateinit var voiceAdapter: VoicePresetAdapter
+
+    private val voiceExecutor = Executors.newSingleThreadExecutor()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,51 +53,82 @@ class PersonaFragment : Fragment() {
         personaCards.add(view.findViewById(R.id.card_tiexin))
         personaCards.add(view.findViewById(R.id.card_quanneng))
 
-        voiceButtons.add(view.findViewById(R.id.rb_voice_standard_male))
-        voiceButtons.add(view.findViewById(R.id.rb_voice_standard_female))
-        voiceButtons.add(view.findViewById(R.id.rb_voice_gentle_female))
-        voiceButtons.add(view.findViewById(R.id.rb_voice_calm_male))
+        chipGroupDialect = view.findViewById(R.id.chip_group_dialect)
+        etCustomVoice = view.findViewById(R.id.et_custom_voice)
+        btnApplyCustomVoice = view.findViewById(R.id.btn_apply_custom_voice)
+
+        rvVoiceList = view.findViewById(R.id.rv_voice_list)
+        voiceAdapter = VoicePresetAdapter(
+            onPresetSelected = { index -> selectVoice(index) },
+            onPreviewClicked = { index -> AudioPreviewPlayer.playSample(requireContext(), index) }
+        )
+        rvVoiceList.adapter = voiceAdapter
+        rvVoiceList.layoutManager = LinearLayoutManager(requireContext())
 
         val context = requireContext()
         selectedPersonaIndex = PreferenceHelper.getLastPersona(context)
         selectedVoiceIndex = PreferenceHelper.getLastVoice(context)
+        currentDialect = PreferenceHelper.getLastDialect(context)
 
         personaCards.forEachIndexed { index, card ->
             card.setOnClickListener { selectPersona(index) }
         }
 
-        voiceButtons.forEachIndexed { index, button ->
-            button.setOnClickListener { selectVoice(index) }
+        setupDialectChips()
+
+        val savedCustomText = PreferenceHelper.getCustomVoiceText(context)
+        val savedMode = PreferenceHelper.getVoiceMode(context)
+        if (savedCustomText.isNotBlank() && savedMode == "custom") {
+            isCustomVoice = true
+            etCustomVoice.setText(savedCustomText)
+            voiceAdapter.setSelectedIndex(-1)
+        } else {
+            isCustomVoice = false
+            voiceAdapter.setSelectedIndex(selectedVoiceIndex)
         }
 
         updatePersonaCardUI(selectedPersonaIndex)
-        updateVoiceButtonUI(selectedVoiceIndex)
 
-        // Initialize TTS for voice preview
-        initTts(context)
+        btnApplyCustomVoice.setOnClickListener { applyCustomVoice() }
+
+        syncVoiceToAdapter()
     }
 
-    private fun initTts(context: Context) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.CHINESE
+    private fun setupDialectChips() {
+        val dialects = FileHelper.DIALECT_OPTIONS
+        val labels = listOf(
+            getString(R.string.dialect_default),
+            "四川话", "粤语"
+        )
+        dialects.forEachIndexed { index, dialectValue ->
+            val chip = Chip(requireContext()).apply {
+                text = labels[index]
+                isCheckable = true
+                id = View.generateViewId()
+            }
+            chipGroupDialect.addView(chip)
+            if (dialectValue == currentDialect) {
+                chip.isChecked = true
             }
         }
-    }
-
-    private fun previewVoice(index: Int) {
-        val params = voiceParams[index]
-        tts?.apply {
-            setPitch(params[0])
-            setSpeechRate(params[1])
-            speak("你好，我是你的智能语音助手", TextToSpeech.QUEUE_FLUSH, null, "voice_$index")
+        chipGroupDialect.setOnCheckedStateChangeListener { _, _ ->
+            val checkedId = chipGroupDialect.checkedChipId
+            if (checkedId == View.NO_ID) {
+                currentDialect = ""
+            } else {
+                val chip = chipGroupDialect.findViewById<Chip>(checkedId)
+                val idx = chipGroupDialect.indexOfChild(chip)
+                currentDialect = FileHelper.DIALECT_OPTIONS.getOrElse(idx) { "" }
+            }
+            onDialectChanged()
         }
     }
 
     private fun selectPersona(index: Int) {
         val context = requireContext()
         val prompt = FileHelper.getPersonaPrompt(index)
-        FileHelper.writeFile(FileHelper.personaFilePath, prompt)
+        val dialectSuffix = FileHelper.buildDialectPromptForLlm(currentDialect)
+        FileHelper.writeFile(FileHelper.personaFilePath, prompt + dialectSuffix)
         selectedPersonaIndex = index
         updatePersonaCardUI(index)
         PreferenceHelper.saveLastPersona(context, index)
@@ -98,12 +136,146 @@ class PersonaFragment : Fragment() {
 
     private fun selectVoice(index: Int) {
         val context = requireContext()
-        previewVoice(index)
-        val config = FileHelper.getVoiceConfig(index)
-        FileHelper.writeFile(FileHelper.voiceConfigFilePath, config)
+        isCustomVoice = false
+
+        AudioPreviewPlayer.playSample(context, index)
+
+        val preset = FileHelper.getVoicePreset(index)
+        val fields = mutableMapOf<String, Any?>(
+            "ref_audio" to preset.refAudio,
+            "prompt_text" to preset.promptText,
+            "dialect" to currentDialect,
+            "cfg_value" to preset.cfgValue,
+            "temperature" to preset.temperature,
+            "auto_ref" to false
+        )
+        applyVoiceToAdapter(fields)
+
         selectedVoiceIndex = index
-        updateVoiceButtonUI(index)
+        voiceAdapter.setSelectedIndex(index)
         PreferenceHelper.saveLastVoice(context, index)
+        PreferenceHelper.saveCustomVoiceText(context, "")
+        PreferenceHelper.saveVoiceMode(context, "preset")
+    }
+
+    private fun applyCustomVoice() {
+        val text = etCustomVoice.text?.toString()?.trim() ?: ""
+        if (text.isBlank()) return
+
+        isCustomVoice = true
+        val promptText = "(${text})"
+
+        val fields = mutableMapOf<String, Any?>(
+            "ref_audio" to null,
+            "prompt_text" to promptText,
+            "dialect" to currentDialect,
+            "auto_ref" to true
+        )
+        applyVoiceToAdapter(fields)
+
+        voiceAdapter.setSelectedIndex(-1)
+        PreferenceHelper.saveCustomVoiceText(requireContext(), text)
+        PreferenceHelper.saveVoiceMode(requireContext(), "custom")
+    }
+
+    private fun onDialectChanged() {
+        val context = requireContext()
+        val fields = mapOf<String, Any?>("dialect" to currentDialect)
+        applyVoiceToAdapter(fields)
+
+        val personaPrompt = FileHelper.getPersonaPrompt(selectedPersonaIndex)
+        val dialectSuffix = FileHelper.buildDialectPromptForLlm(currentDialect)
+        FileHelper.writeFile(FileHelper.personaFilePath, personaPrompt + dialectSuffix)
+
+        PreferenceHelper.saveLastDialect(context, currentDialect)
+        Toast.makeText(context, R.string.toast_dialect_updated, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun applyVoiceToAdapter(fields: Map<String, Any?>) {
+        voiceExecutor.execute {
+            val success = TtsApiClient.updateVoice("default", fields)
+            activity?.runOnUiThread {
+                val context = context ?: return@runOnUiThread
+                if (success) {
+                    Toast.makeText(context, R.string.toast_voice_updated, Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, R.string.toast_voice_update_failed, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun syncVoiceToAdapter() {
+        voiceExecutor.execute {
+            val currentVoice = TtsApiClient.getVoice("default")
+            if (currentVoice == null) {
+                val context = context ?: return@execute
+                if (isCustomVoice) {
+                    val text = PreferenceHelper.getCustomVoiceText(context)
+                    if (text.isNotBlank()) {
+                        TtsApiClient.updateVoice("default", mapOf(
+                            "ref_audio" to null,
+                            "prompt_text" to "(${text})",
+                            "dialect" to currentDialect,
+                            "auto_ref" to true
+                        ))
+                    }
+                } else {
+                    val preset = FileHelper.getVoicePreset(selectedVoiceIndex)
+                    TtsApiClient.updateVoice("default", mapOf(
+                        "ref_audio" to preset.refAudio,
+                        "prompt_text" to "",
+                        "dialect" to currentDialect,
+                        "cfg_value" to preset.cfgValue,
+                        "temperature" to preset.temperature,
+                        "auto_ref" to false
+                    ))
+                }
+                return@execute
+            }
+
+            val adapterDialect = currentVoice.optString("dialect", "")
+            val adapterRefAudio = currentVoice.optString("ref_audio", "")
+            val adapterAutoRef = currentVoice.optBoolean("auto_ref", false)
+
+            val context = context ?: return@execute
+            val needsUpdate = if (isCustomVoice) {
+                adapterDialect != currentDialect
+            } else {
+                val preset = FileHelper.getVoicePreset(selectedVoiceIndex)
+                adapterDialect != currentDialect || adapterRefAudio != preset.refAudio
+            }
+
+            if (needsUpdate) {
+                if (isCustomVoice && adapterAutoRef && adapterRefAudio.isNotEmpty()) {
+                    if (adapterDialect != currentDialect) {
+                        TtsApiClient.updateVoice("default", mapOf("dialect" to currentDialect))
+                    }
+                } else {
+                    if (isCustomVoice) {
+                        val text = PreferenceHelper.getCustomVoiceText(context)
+                        if (text.isNotBlank()) {
+                            TtsApiClient.updateVoice("default", mapOf(
+                                "ref_audio" to null,
+                                "prompt_text" to "(${text})",
+                                "dialect" to currentDialect,
+                                "auto_ref" to true
+                            ))
+                        }
+                    } else {
+                        val preset = FileHelper.getVoicePreset(selectedVoiceIndex)
+                        TtsApiClient.updateVoice("default", mapOf(
+                            "ref_audio" to preset.refAudio,
+                            "prompt_text" to "",
+                            "dialect" to currentDialect,
+                            "cfg_value" to preset.cfgValue,
+                            "temperature" to preset.temperature,
+                            "auto_ref" to false
+                        ))
+                    }
+                }
+            }
+        }
     }
 
     private fun updatePersonaCardUI(selectedIndex: Int) {
@@ -119,28 +291,8 @@ class PersonaFragment : Fragment() {
         }
     }
 
-    private fun updateVoiceButtonUI(selectedIndex: Int) {
-        val ctx = requireContext()
-        voiceButtons.forEachIndexed { index, button ->
-            if (index == selectedIndex) {
-                button.setBackgroundColor(ContextCompat.getColor(ctx, R.color.light_blue))
-                button.setTextColor(ContextCompat.getColor(ctx, R.color.white))
-                button.iconTint = ContextCompat.getColorStateList(ctx, R.color.white)
-                button.strokeColor = null
-                button.strokeWidth = 0
-            } else {
-                button.setBackgroundColor(ContextCompat.getColor(ctx, R.color.surface))
-                button.setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
-                button.iconTint = ContextCompat.getColorStateList(ctx, R.color.text_hint)
-                button.strokeColor = ContextCompat.getColorStateList(ctx, R.color.card_border)
-                button.strokeWidth = 1
-            }
-        }
-    }
-
     override fun onDestroy() {
-        tts?.stop()
-        tts?.shutdown()
+        AudioPreviewPlayer.stop()
         super.onDestroy()
     }
 }
