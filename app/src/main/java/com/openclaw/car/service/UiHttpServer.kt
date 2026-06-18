@@ -192,6 +192,7 @@ class UiHttpServer : Thread("ui-http-server") {
             path == "/browse" && method == "POST" -> handleBrowse(body)
             path == "/tap" && method == "POST" -> handleTap(body)
             path.startsWith("/map/") && method == "POST" -> handleMap(path, body)
+            path.startsWith("/music/") && method == "POST" -> handleMusic(path, body)
             else -> """{"ok":false,"error":"not found: $path"}"""
         }
 
@@ -1004,6 +1005,44 @@ class UiHttpServer : Thread("ui-http-server") {
             }
         } catch (e: Exception) {
             return """{"ok":false,"error":${JSONObject.quote(e.message)}}"""
+        }
+    }
+
+    private fun handleMusic(path: String, body: String): String {
+        val ctrl = MusicController.getInstance()
+            ?: return """{"ok":false,"error":"MusicController not initialized"}"""
+
+        return when (path) {
+            "/music/play" -> ctrl.play()
+            "/music/pause", "/music/stop" -> ctrl.pause()
+            "/music/next" -> ctrl.next()
+            "/music/previous" -> ctrl.previous()
+            "/music/state" -> ctrl.getState()
+            "/music/search" -> {
+                val json = JSONObject(body)
+                val song = json.optString("song", json.optString("keyword", ""))
+                val artist = json.optString("artist", "")
+                val source = json.optString("source", "")
+                val autoPlay = json.optBoolean("autoPlay", true)
+                if (song.isEmpty() && artist.isEmpty()) {
+                    """{"ok":false,"error":"must provide song or artist"}"""
+                } else {
+                    ctrl.search(
+                        song = song.ifBlank { null },
+                        artist = artist.ifBlank { null },
+                        source = source.ifBlank { null },
+                        autoPlay = autoPlay
+                    )
+                }
+            }
+            "/music/volume" -> {
+                val json = JSONObject(body)
+                val direction = json.optString("direction", "")
+                val level = if (json.has("level")) json.getInt("level") else null
+                if (direction.isEmpty()) """{"ok":false,"error":"missing direction (up/down/set)"}"""
+                else ctrl.volume(direction, level)
+            }
+            else -> """{"ok":false,"error":"unknown music endpoint: $path"}"""
         }
     }
 

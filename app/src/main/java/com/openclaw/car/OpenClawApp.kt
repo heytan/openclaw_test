@@ -3,6 +3,7 @@ package com.openclaw.car
 import android.app.Application
 import android.util.Log
 import com.openclaw.car.service.MapProtocolManager
+import com.openclaw.car.service.MusicController
 
 class OpenClawApp : Application() {
 
@@ -24,12 +25,18 @@ class OpenClawApp : Application() {
         registerActivityLifecycleCallbacks(lifecycleCallback)
         Log.i(TAG, "OpenClawApp created")
         initMapProtocol()
+        initMusicController()
     }
 
     private fun initMapProtocol() {
         val mgr = MapProtocolManager.init(this)
         val bound = mgr.bind()
         Log.i(TAG, "MapProtocolManager bind result: $bound")
+    }
+
+    private fun initMusicController() {
+        MusicController.init(this)
+        Log.i(TAG, "MusicController initialized")
     }
 
     companion object {
