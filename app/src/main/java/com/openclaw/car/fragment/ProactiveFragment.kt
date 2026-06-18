@@ -17,6 +17,10 @@ import kotlin.math.abs
 
 class ProactiveFragment : Fragment() {
 
+    companion object {
+        private val expandedCardIndices = mutableSetOf<Int>()
+    }
+
     private data class CardState(
         val cardId: Int,
         val overlayId: Int,
@@ -92,10 +96,12 @@ class ProactiveFragment : Fragment() {
                             if (deltaX > 0 && !card.expanded) {
                                 // Swipe left -> expand
                                 card.expanded = true
+                                expandedCardIndices.add(cards.indexOf(card))
                                 updateDescLayout(desc, true)
                             } else if (deltaX < 0 && card.expanded) {
                                 // Swipe right -> collapse
                                 card.expanded = false
+                                expandedCardIndices.remove(cards.indexOf(card))
                                 updateDescLayout(desc, false)
                             }
                         } else if (!isSwipe && deltaY < 30) {
@@ -110,9 +116,17 @@ class ProactiveFragment : Fragment() {
                 true
             }
         }
-    }
 
-    private val soulContextTag = "# 当前车内环境"
+        // Restore selection from scene file
+        restoreSelection(view)
+        for (idx in expandedCardIndices) {
+            if (idx in cards.indices) {
+                cards[idx].expanded = true
+                val desc: TextView = view.findViewById(cards[idx].descId)
+                updateDescLayout(desc, true)
+            }
+        }
+    }
 
     private fun selectCard(root: View, card: CardState, overlay: View, check: ImageView) {
         val wasSelected = card.selected
@@ -125,36 +139,36 @@ class ProactiveFragment : Fragment() {
             card.selected = true
             overlay.visibility = View.VISIBLE
             check.visibility = View.VISIBLE
-            appendSceneToSoul(card.descText)
+            writeScene(card.descText)
         } else {
-            removeSceneFromSoul()
+            clearScene()
         }
     }
 
-    private fun appendSceneToSoul(desc: String) {
+    private fun restoreSelection(root: View) {
         try {
-            val file = File(FileHelper.AGENT_SOUL_PATH)
+            val file = File(FileHelper.AGENT_SCENE_PATH)
             if (!file.exists()) return
-            var content = file.readText(Charsets.UTF_8)
-            // Remove old scene section if exists
-            val tagIndex = content.indexOf(soulContextTag)
-            if (tagIndex >= 0) {
-                content = content.substring(0, tagIndex).trimEnd() + "\n"
-            }
-            content += "\n$soulContextTag\n\n$desc\n"
-            file.writeText(content, Charsets.UTF_8)
+            val content = file.readText(Charsets.UTF_8).trim()
+            if (content.isEmpty()) return
+            val matchedCard = cards.find { it.descText == content } ?: return
+            matchedCard.selected = true
+            root.findViewById<View>(matchedCard.overlayId).visibility = View.VISIBLE
+            root.findViewById<ImageView>(matchedCard.checkId).visibility = View.VISIBLE
         } catch (_: Exception) {}
     }
 
-    private fun removeSceneFromSoul() {
+    private fun writeScene(desc: String) {
         try {
-            val file = File(FileHelper.AGENT_SOUL_PATH)
-            if (!file.exists()) return
-            val content = file.readText(Charsets.UTF_8)
-            val tagIndex = content.indexOf(soulContextTag)
-            if (tagIndex >= 0) {
-                file.writeText(content.substring(0, tagIndex).trimEnd() + "\n", Charsets.UTF_8)
-            }
+            val file = File(FileHelper.AGENT_SCENE_PATH)
+            file.writeText(desc, Charsets.UTF_8)
+        } catch (_: Exception) {}
+    }
+
+    private fun clearScene() {
+        try {
+            val file = File(FileHelper.AGENT_SCENE_PATH)
+            if (file.exists()) file.delete()
         } catch (_: Exception) {}
     }
 

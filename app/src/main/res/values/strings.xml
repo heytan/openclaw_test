@@ -7,6 +7,7 @@
     <string name="tab_skill">技能</string>
     <string name="tab_memory">记忆</string>
     <string name="tab_proactive">主动服务</string>
+    <string name="tab_a2ui">A2UI</string>
 
     <!-- Persona tab -->
     <string name="persona_title">选择Agent身份</string>
@@ -33,7 +34,7 @@
     <string name="skill_empty">暂无技能数据</string>
 
     <!-- Memory tab -->
-    <string name="memory_title">用户记忆记录</string>
+    <string name="memory_title">我的记忆列表</string>
     <string name="memory_empty">暂无记忆记录</string>
 
     <!-- Proactive tab -->

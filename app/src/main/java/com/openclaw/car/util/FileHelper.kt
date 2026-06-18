@@ -19,6 +19,7 @@ object FileHelper {
 
     private const val AGENT_WORKSPACE = "/data/local/tmp/openclaw-home/.openclaw/workspace"
     const val AGENT_SOUL_PATH = "$AGENT_WORKSPACE/SOUL.md"
+    const val AGENT_SCENE_PATH = "$AGENT_WORKSPACE/SCENE.md"
     private const val AGENT_USER_PATH = "$AGENT_WORKSPACE/MEMORY.md"
     private const val PLUGIN_SKILLS_DIR = "/data/local/tmp/openclaw-home/.openclaw/skills"
 
@@ -31,7 +32,10 @@ object FileHelper {
     val VOICE_PRESETS = mapOf(
         0 to VoicePreset("活泼女声", "voice_samples/活泼女声.wav", 2.5, 0.5, "活泼女声，明亮欢快"),
         1 to VoicePreset("明亮女声", "voice_samples/明亮女声.wav", 2.5, 0.5, "明亮女声，清脆悦耳"),
-        2 to VoicePreset("磁性男声", "voice_samples/磁性男声.wav", 2.5, 0.5, "磁性男声，低沉浑厚")
+        2 to VoicePreset("磁性男声", "voice_samples/磁性男声.wav", 2.5, 0.5, "磁性男声，低沉浑厚"),
+        3 to VoicePreset("小何（豆包）", "voice_samples/小何.wav", 2.5, 0.7, ""),
+        4 to VoicePreset("王力宏", "voice_samples/王力宏.wav", 3.0, 0.8, "自然男声，温和有磁性"),
+        5 to VoicePreset("高圆圆", "voice_samples/高圆圆.wav", 3.0, 0.8, "温柔女声，自然亲切")
     )
 
     val DIALECT_OPTIONS = listOf(

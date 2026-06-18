@@ -35,4 +35,16 @@
         <item name="android:textStyle">bold</item>
         <item name="textAllCaps">false</item>
     </style>
+
+    <!-- 透明 Activity：app 在后台/被杀时用于离屏渲染 A2UI 卡片并截图。
+         窗口全透明、无动画、不进入最近任务，渲染完即 finish。 -->
+    <style name="Theme.TransparentBackground" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
 </resources>

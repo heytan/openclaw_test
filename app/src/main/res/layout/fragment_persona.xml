@@ -238,51 +238,22 @@
             app:chipSpacingHorizontal="8dp"
             app:chipSpacingVertical="4dp" />
 
-        <!-- Section divider -->
+        <!-- ========== Stream TTS Toggle ========== -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/divider"
             android:layout_marginTop="28dp"
-            android:layout_marginBottom="28dp" />
+            android:layout_marginBottom="20dp" />
 
-        <!-- ========== Custom Voice Text Section ========== -->
-        <TextView
-            android:id="@+id/tv_custom_voice_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/custom_voice_title"
-            android:textColor="@color/text_primary"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="12dp" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_custom_voice"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_stream_tts"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/custom_voice_hint"
-            app:counterEnabled="true"
-            app:counterMaxLength="50">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_custom_voice"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxLength="50"
-                android:maxLines="2"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_apply_custom_voice"
-            android:layout_width="wrap_content"
-            android:layout_height="44dp"
-            android:layout_marginTop="8dp"
-            android:text="@string/btn_apply"
-            android:textSize="14sp"
-            android:layout_gravity="end" />
+            android:text="流式 TTS (实验)"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:padding="4dp" />
 
     </LinearLayout>
 </ScrollView>

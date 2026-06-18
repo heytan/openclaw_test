@@ -14,6 +14,11 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
+
+        ndkVersion = "27.3.13750724"
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     buildTypes {
@@ -34,9 +39,21 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    packagingOptions {
+        pickFirst("lib/arm64-v8a/libc++_shared.so")
+    }
 }
 
 dependencies {
+    // AGenUI SDK
+    implementation(files("libs/AGenUI-Client-Android-release.aar"))
+
+    // AGenUI transitive dependencies
+    implementation("com.squareup.picasso:picasso:2.8")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("androidx.cardview:cardview:1.0.0")
+
     // Material 3
     implementation("com.google.android.material:material:1.9.0")
 

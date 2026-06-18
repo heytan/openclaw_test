@@ -35,6 +35,12 @@ class NodeProcessManager(context: Context) {
             ),
             openclawHome
         ),
+        ProcessDef(
+            "mcp-proxy",
+            arrayOf(nodeBin, "$openclawHome/mcp-proxy.js"),
+            arrayOf(),
+            openclawHome
+        ),
     )
 
     private val procs = arrayOfNulls<Process>(processDefs.size)

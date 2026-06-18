@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 喇叭禁用图标（带斜线） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 喇叭主体 -->
+    <path
+        android:fillColor="#80FFFFFF"
+        android:pathData="M3,9v6h4l5,5V4L7,9H3z" />
+    <!-- 禁用斜线 -->
+    <path
+        android:fillColor="#FF4444"
+        android:pathData="M18,9L9,18M9,9l9,9"
+        android:strokeColor="#FF4444"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+</vector>

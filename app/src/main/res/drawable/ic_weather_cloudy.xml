@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Back cloud -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M17,8C17,8 16.5,4 13,4C10.5,4 9,6 9,8C6.2,8 4,10.2 4,13C4,15.8 6.2,18 9,18H18C20.2,18 22,16.2 22,14C22,11.8 20.2,8 17,8Z"/>
+    <!-- Front cloud -->
+    <path
+        android:fillColor="#90A4AE"
+        android:pathData="M14,11C14,11 13.5,7 10,7C7.5,7 6,9 6,11C3.2,11 1,13.2 1,16C1,18.8 3.2,21 6,21H15C17.2,21 19,19.2 19,17C19,14.8 17.2,11 14,11Z"/>
+</vector>

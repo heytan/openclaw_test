@@ -35,6 +35,17 @@
         android:padding="4dp"
         app:tint="@color/text_hint" />
 
+    <ImageButton
+        android:id="@+id/btn_rerecord"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:src="@drawable/ic_refresh"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="重新录制"
+        android:padding="4dp"
+        android:visibility="gone"
+        app:tint="@color/text_hint" />
+
     <ImageView
         android:id="@+id/iv_selected"
         android:layout_width="20dp"

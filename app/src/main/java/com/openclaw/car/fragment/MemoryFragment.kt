@@ -51,7 +51,7 @@ class MemoryFragment : Fragment() {
         } else {
             emptyHint.visibility = View.GONE
             recyclerView.visibility = View.VISIBLE
-            adapter.submitList(memories)
+            adapter.submitList(memories.reversed())
         }
     }
 }

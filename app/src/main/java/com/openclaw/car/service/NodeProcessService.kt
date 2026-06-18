@@ -6,12 +6,16 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import com.openclaw.car.OpenClawApp
 import com.openclaw.car.R
+import java.io.File
 
 class NodeProcessService : Service() {
 
@@ -59,6 +63,7 @@ class NodeProcessService : Service() {
     override fun onDestroy() {
         instance = null
         watchdog.removeCallbacks(watchdogTask)
+        stopGpsMonitor()
         manager.stopAll()
         GatewayClient.instance.disconnect()
         stopService(Intent(this, FloatingBubbleService::class.java))
@@ -74,27 +79,128 @@ class NodeProcessService : Service() {
 
     fun getProcessManager(): NodeProcessManager = manager
 
+    private var locationManager: LocationManager? = null
+    private val gpsFile = File("/data/local/tmp/gps.json")
+
+    private val locationListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            // Prefer the car's own SomeIP GPS — but only if it's fresh.
+            // When the car is indoors, SomeIPMatrixManager reports a stale cached
+            // position for hours. If gps.json is older than 5 min, let
+            // LocationManager (NETWORK_PROVIDER works indoors via wifi) overwrite.
+            try {
+                val existing = gpsFile.readText()
+                if (existing.contains("\"provider\":\"someip\"") &&
+                    System.currentTimeMillis() - gpsFile.lastModified() < 5 * 60 * 1000L
+                ) return
+            } catch (_: Exception) {}
+
+            val lat = location.latitude.toString()
+            val lng = location.longitude.toString()
+            try {
+                // Direct overwrite — /data/local/tmp is shell:shell drwxrwx--x so the
+                // app (u10_a150) can't create/rename files there. We rely on
+                // gps.json already existing with u10_a150 ownership (set up by
+                // the boot script or install script). Atomic tmp+rename would be
+                // nicer but the directory write permission makes it impossible.
+                gpsFile.writeText("""{"ok":true,"lat":"$lat","lng":"$lng","provider":"${location.provider}"}""")
+            } catch (e: Exception) {
+                Log.w(OpenClawApp.TAG, "GPS write error: ${e.message}")
+            }
+        }
+
+        override fun onLocationChanged(locations: MutableList<Location>) {
+            locations.lastOrNull()?.let { onLocationChanged(it) }
+        }
+
+        override fun onProviderEnabled(provider: String) {}
+        override fun onProviderDisabled(provider: String) {}
+    }
+
     private fun startGpsMonitor() {
+        // PRIMARY: in-app logcat poller. We have READ_LOGS granted, so we read
+        // SomeIPMatrixManager:E directly without needing the gps-monitor.sh root
+        // daemon (which has been flaky to spawn via su — setsid/nohup both
+        // unreliable from app context on this device).
+        startLogcatGpsPoller()
+
+        // SECONDARY: Android LocationManager. Indoors both sources are stale,
+        // but if the car has a network-based fix it'll surface here.
+        startLocationFallback()
+    }
+
+    private val sendGpsRegex = Regex("""sendGps:([0-9a-f]+)\s+([0-9a-f]+)""")
+
+    private fun startLogcatGpsPoller() {
+        Thread {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
+            Log.i(OpenClawApp.TAG, "GPS logcat poller started")
+            while (!Thread.currentThread().isInterrupted) {
+                try {
+                    val proc = Runtime.getRuntime().exec(
+                        arrayOf("logcat", "-d", "-s", "SomeIPMatrixManager:E")
+                    )
+                    val output = proc.inputStream.bufferedReader().readText()
+                    proc.waitFor()
+                    val lastLine = output.lines().lastOrNull { it.contains("sendGps:") }
+                    val m = lastLine?.let { sendGpsRegex.find(it) }
+                    if (m != null) {
+                        val lng = hexToAscii(m.groupValues[1])
+                        val lat = hexToAscii(m.groupValues[2])
+                        if (lat.isNotEmpty() && lng.isNotEmpty()) {
+                            gpsFile.writeText("""{"ok":true,"lat":"$lat","lng":"$lng","provider":"someip"}""")
+                        }
+                    }
+                } catch (e: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    break
+                } catch (e: Exception) {
+                    Log.w(OpenClawApp.TAG, "GPS poller error: ${e.message}")
+                }
+                try {
+                    Thread.sleep(3000)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    break
+                }
+            }
+            Log.i(OpenClawApp.TAG, "GPS logcat poller exiting")
+        }.apply { isDaemon = true; name = "gps-logcat-poller" }.start()
+    }
+
+    private fun hexToAscii(hex: String): String {
+        val sb = StringBuilder()
+        var i = 0
+        while (i + 1 < hex.length) {
+            val c = hex.substring(i, i + 2).toIntOrNull(16) ?: break
+            if (c > 0) sb.append(c.toChar())
+            i += 2
+        }
+        return sb.toString()
+    }
+
+    private fun startLocationFallback() {
         try {
-            Runtime.getRuntime().exec(arrayOf("sh", "-c", "pkill -f gps-monitor 2>/dev/null")).waitFor()
-            Thread.sleep(500)
+            locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+            val providers = locationManager!!.getProviders(true)
+            Log.i(OpenClawApp.TAG, "GPS providers: $providers")
 
-            // Try su first (needs Magisk auto-grant configured)
-            val suTest = Runtime.getRuntime().exec(arrayOf("timeout", "2", "su", "-c", "id"))
-            val suOk = suTest.inputStream.bufferedReader().readText().contains("uid=0")
-            suTest.waitFor()
-
-            if (suOk) {
-                Runtime.getRuntime().exec(arrayOf("su", "-c", "nohup /system/bin/sh /data/local/tmp/gps-monitor.sh >/dev/null 2>&1 &"))
-                Log.i(OpenClawApp.TAG, "GPS monitor started with root")
-            } else {
-                // Fallback: start as app user (won't have logcat access on multi-user Android)
-                Runtime.getRuntime().exec(arrayOf("sh", "-c", "nohup /system/bin/sh /data/local/tmp/gps-monitor.sh >/dev/null 2>&1 &"))
-                Log.w(OpenClawApp.TAG, "GPS monitor started as app user (may not read logcat)")
+            for (provider in listOf(LocationManager.GPS_PROVIDER, LocationManager.PASSIVE_PROVIDER, LocationManager.NETWORK_PROVIDER)) {
+                if (providers.contains(provider)) {
+                    locationManager!!.getLastKnownLocation(provider)?.let {
+                        locationListener.onLocationChanged(it)
+                    }
+                    locationManager!!.requestLocationUpdates(provider, 3000L, 0f, locationListener, Looper.getMainLooper())
+                    Log.i(OpenClawApp.TAG, "GPS listener registered for $provider")
+                }
             }
         } catch (e: Exception) {
-            Log.e(OpenClawApp.TAG, "Failed to start GPS monitor: ${e.message}")
+            Log.e(OpenClawApp.TAG, "LocationManager error: ${e.message}")
         }
+    }
+
+    private fun stopGpsMonitor() {
+        locationManager?.removeUpdates(locationListener)
     }
 
     companion object {

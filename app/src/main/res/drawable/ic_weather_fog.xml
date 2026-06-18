@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Fog lines -->
+    <path
+        android:pathData="M3,8L18,8M5,12L20,12M3,16L18,16M7,20L16,20"
+        android:strokeColor="#90A4AE"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"/>
+    <!-- Small cloud -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M6,4C6,4 5.8,2 4,2C2.8,2 2,3 2,4C1,4 0,5 0,6.5C0,8 1,9 2.5,9H8C9.2,9 10,8.2 10,7C10,5.8 9.2,4 6,4Z"/>
+</vector>

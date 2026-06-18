@@ -21,6 +21,9 @@ class ItemListAdapter(
 
     private val nameZh = mapOf(
         "car-control" to "车载控制",
+        "car-music" to "音乐控制",
+        "car-nav" to "导航控制",
+        "car-poi" to "周边搜索",
         "browser-automation" to "浏览器自动化",
         "feishu-doc" to "飞书文档",
         "feishu-drive" to "飞书云盘",
@@ -28,11 +31,31 @@ class ItemListAdapter(
         "feishu-wiki" to "飞书知识库",
         "qqbot-channel" to "QQ频道管理",
         "qqbot-media" to "QQ富媒体",
-        "qqbot-remind" to "QQ定时提醒"
+        "qqbot-remind" to "QQ定时提醒",
+        "entertainment-immersive" to "沉浸模式",
+        "movie-theater-trip" to "影院出行",
+        "romantic-date" to "浪漫约会",
+        "elder-comfort" to "长辈舒适",
+        "school-pickup" to "接娃放学",
+        "post-workout-relax" to "运动放松",
+        "counting-stars" to "观星模式",
+        "cozy-nap" to "午休模式",
+        "emotional-healer" to "情感疗愈",
+        "inspiration-catcher" to "灵感捕捉",
+        "make-friends" to "认识你我",
+        "maoyan-ticket-booking" to "猫眼购票",
+        "no-reply-when-others-talk" to "静默模式",
+        "parking-pay" to "停车缴费",
+        "parking-pay-seatbelt" to "系安全带缴费",
+        "toxic-tongue-mode" to "毒舌模式",
+        "a2ui-generation" to "A2UI卡片生成",
     )
 
     private val descZh = mapOf(
         "car-control" to "控制比亚迪仰望车机应用：音乐、地图、导航",
+        "car-music" to "控制车载音乐播放器：播放、暂停、切歌、搜索歌曲",
+        "car-nav" to "高德地图导航控制：路线规划、途经点、沿线搜索",
+        "car-poi" to "高德周边搜索：附近美食、加油站、评分推荐",
         "browser-automation" to "网页多步骤操作、登录检测、标签管理",
         "feishu-doc" to "飞书文档读写操作",
         "feishu-drive" to "飞书云空间文件管理",
@@ -40,7 +63,8 @@ class ItemListAdapter(
         "feishu-wiki" to "飞书知识库导航与查询",
         "qqbot-channel" to "QQ频道管理：成员、发帖、公告、日程",
         "qqbot-media" to "QQBot图片、语音、视频、文件收发",
-        "qqbot-remind" to "QQBot一次性与周期性定时提醒"
+        "qqbot-remind" to "QQBot一次性与周期性定时提醒",
+        "a2ui-generation" to "设计生成A2UI卡片、组件和页面，支持DTO驱动和UI迭代优化",
     )
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

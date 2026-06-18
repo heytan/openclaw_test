@@ -7,6 +7,7 @@ import android.location.LocationManager
 import android.net.Uri
 import android.util.Log
 import com.openclaw.car.OpenClawApp
+import com.openclaw.car.fragment.AGenUIFragment
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -193,6 +194,9 @@ class UiHttpServer : Thread("ui-http-server") {
             path == "/tap" && method == "POST" -> handleTap(body)
             path.startsWith("/map/") && method == "POST" -> handleMap(path, body)
             path.startsWith("/music/") && method == "POST" -> handleMusic(path, body)
+            path == "/agenui/test" && method == "POST" -> handleAGenUITest()
+            path == "/agenui/diag" -> handleAGenUIDiag()
+            path == "/agenui/render" && method == "POST" -> handleAGenUIRender(body)
             else -> """{"ok":false,"error":"not found: $path"}"""
         }
 
@@ -498,7 +502,13 @@ class UiHttpServer : Thread("ui-http-server") {
                 val dest = lastDestPoiName
                 val dLat = lastDestLat
                 val dLng = lastDestLng
-                if (dest.isEmpty()) return """{"ok":false,"error":"no active destination stored, use naviViaPass instead"}"""
+                if (dest.isEmpty()) {
+                    // No destination set yet, treat the via point as destination (naviViaPass mode)
+                    Log.i(OpenClawApp.TAG, "[MapServer] addViaPoi: no dest set, treating as direct nav to $poiName")
+                    val pref = json.optInt("preference", 0)
+                    mgr.naviToPoiAsync(poiName, lat, lng, pref)
+                    return """{"ok":true,"result":"navigating to via point as destination"}"""
+                }
                 waitForCallback { cb -> mgr.addViaPoi(poiName, lat, lng, dest, dLat, dLng, cb) }
             }
             path == "/map/delViaPass" -> {
@@ -1008,6 +1018,20 @@ class UiHttpServer : Thread("ui-http-server") {
         }
     }
 
+    companion object {
+        const val PORT = 18802
+        private var instance: UiHttpServer? = null
+
+        fun start() {
+            if (instance?.isAlive == true) return
+            instance?.interrupt()
+            instance = UiHttpServer()
+            instance!!.start()
+            // TODO: track recording temporarily disabled, re-enable when needed
+            // instance!!.startTrackRecording()
+        }
+    }
+
     private fun handleMusic(path: String, body: String): String {
         val ctrl = MusicController.getInstance()
             ?: return """{"ok":false,"error":"MusicController not initialized"}"""
@@ -1046,17 +1070,45 @@ class UiHttpServer : Thread("ui-http-server") {
         }
     }
 
-    companion object {
-        const val PORT = 18802
-        private var instance: UiHttpServer? = null
+    private fun handleAGenUITest(): String {
+        val activity = AGenUIFragment.instance ?: return """{"ok":false,"error":"no activity"}"""
+        val sid = "test_${System.currentTimeMillis()}"
+        val testJson = """
+            {"version":"v0.9","createSurface":{"surfaceId":"$sid","catalogId":"https://a2ui.org/specification/v0_9/standard_catalog.json","theme":{},"sendDataModel":false,"animated":false}}
+            {"version":"v0.9","updateComponents":{"surfaceId":"$sid","components":[{"id":"root","component":"Column","children":["t1"]},{"id":"t1","component":"Text","text":"Hello AGenUI!"}]}}
+        """.trimIndent()
+        activity.receiveA2UI(testJson)
+        return """{"ok":true,"surfaceId":"$sid"}"""
+    }
 
-        fun start() {
-            if (instance?.isAlive == true) return
-            instance?.interrupt()
-            instance = UiHttpServer()
-            instance!!.start()
-            // TODO: track recording temporarily disabled, re-enable when needed
-            // instance!!.startTrackRecording()
+    private fun handleAGenUIDiag(): String {
+        val fragment = AGenUIFragment.instance ?: return """{"ok":false,"error":"no fragment"}"""
+        val count = fragment.cardCount
+        val surface = fragment.currentSurface
+        if (surface == null) {
+            return """{"ok":true,"cardCount":$count,"surface":null}"""
+        }
+        val tree = surface.componentTree
+        val components = tree.keys.joinToString(",")
+        val root = surface.rootComponent
+        val rootId = root?.id ?: "null"
+        val rootView = root?.view
+        val rootViewInfo = rootView?.let { "${it.javaClass.simpleName} ${it.width}x${it.height} children=${(it as? android.view.ViewGroup)?.childCount ?: 0}" } ?: "null"
+        val container = surface.container
+        val containerInfo = "${container.width}x${container.height} children=${container.childCount}"
+        return """{"ok":true,"cardCount":$count,"surfaceId":"${surface.surfaceId}","components":"$components","rootId":"$rootId","rootView":"$rootViewInfo","container":"$containerInfo"}"""
+    }
+
+    private fun handleAGenUIRender(body: String): String {
+        val activity = AGenUIFragment.instance ?: return """{"ok":false,"error":"no activity"}"""
+        try {
+            val json = JSONObject(body)
+            val a2uiData = json.optString("data", "")
+            if (a2uiData.isEmpty()) return """{"ok":false,"error":"missing data field"}"""
+            activity.receiveA2UI(a2uiData)
+            return """{"ok":true}"""
+        } catch (e: Exception) {
+            return """{"ok":false,"error":"${e.message}"}"""
         }
     }
 }

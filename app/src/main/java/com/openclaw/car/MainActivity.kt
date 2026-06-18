@@ -1,6 +1,8 @@
 package com.openclaw.car
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -21,7 +23,8 @@ import com.openclaw.car.util.FileHelper
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var viewPager: ViewPager2
+    lateinit var viewPager: ViewPager2
+        private set
     private lateinit var tabLayout: TabLayout
     private lateinit var statusPanel: View
     private lateinit var dotGateway: View
@@ -44,12 +47,14 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        instance = this
 
         viewPager = findViewById(R.id.view_pager)
         tabLayout = findViewById(R.id.tab_layout)
 
         val adapter = com.openclaw.car.adapter.ViewPagerAdapter(supportFragmentManager, lifecycle)
         viewPager.adapter = adapter
+        viewPager.offscreenPageLimit = 4
 
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             tab.text = when (position) {
@@ -57,11 +62,19 @@ class MainActivity : AppCompatActivity() {
                 1 -> getString(R.string.tab_skill)
                 2 -> getString(R.string.tab_memory)
                 3 -> getString(R.string.tab_proactive)
+                4 -> getString(R.string.tab_a2ui)
                 else -> ""
             }
         }.attach()
 
         FileHelper.init(this)
+
+        // Request RECORD_AUDIO permission via system dialog
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 100)
+        }
 
         // Debug / Production mode toggle
         val switchDebug: MaterialSwitch = findViewById(R.id.switch_debug)
@@ -106,6 +119,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        isForeground = true
         if (FileHelper.DEBUG_MODE) {
             refreshStatus()
             statusHandler.postDelayed(statusRefresh, 5000)
@@ -114,7 +128,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        isForeground = false
         statusHandler.removeCallbacks(statusRefresh)
+    }
+
+    override fun onDestroy() {
+        instance = null
+        super.onDestroy()
     }
 
     private fun refreshStatus() {
@@ -152,5 +172,12 @@ class MainActivity : AppCompatActivity() {
             switch.text = "生产"
             switch.setTextColor(ContextCompat.getColor(this, R.color.text_hint))
         }
+    }
+
+    companion object {
+        var instance: MainActivity? = null
+            private set
+        var isForeground: Boolean = false
+            private set
     }
 }
