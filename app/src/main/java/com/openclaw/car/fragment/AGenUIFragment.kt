@@ -195,6 +195,12 @@ class AGenUIFragment : Fragment() {
                         surfaceContainer.removeAllViews()
                         surfaceContainer.addView(view)
                         Log.i(TAG, "Surface view added: ${surface.surfaceId}")
+                        // SDK CardComponent hardcodes a white card background; make it
+                        // transparent so the outer image+scrim shows.
+                        clearInnerCardBackgrounds(view)
+                        // Add bg image + scrim behind the surface content, sized to the card's
+                        // real measured size (post-layout, explicit size → no measure inflation).
+                        attachCardBackground(ctx, cardView)
                         cardsScroll?.post { cardsScroll?.fullScroll(View.FOCUS_DOWN) }
                         scheduleSnapshot(cardView, deleteBtn, surface.surfaceId)
                         if (surface.surfaceId == "music") {
@@ -233,7 +239,8 @@ class AGenUIFragment : Fragment() {
         container.addView(cardView, 0)
 
         try {
-            val surfaceJson = AGenUIHelpers.patchUnknownIcons(AGenUIHelpers.patchImageDimensions(weatherResult?.themedJson ?: json))
+            val patched = AGenUIHelpers.patchImageDimensions(weatherResult?.themedJson ?: json)
+            val surfaceJson = AGenUIHelpers.patchUnknownIcons(AGenUIHelpers.patchCardBackgrounds(patched))
             surfaceManager.beginTextStream()
             for (line in surfaceJson.lines()) {
                 if (line.isNotBlank()) {
@@ -272,6 +279,56 @@ class AGenUIFragment : Fragment() {
         instance = null
         // cardJsonHistory is kept so cards can be re-rendered when view is recreated
         super.onDestroyView()
+    }
+
+    /**
+     * Adds bg image + 0.85 white scrim behind the surface content, as the first children of the
+     * card. Done in a post() so the card is already laid out to its content-driven size; the bg
+     * views get that EXACT size (not MATCH_PARENT), so they don't feed back into measure and
+     * inflate the WRAP_CONTENT card.
+     */
+    private fun attachCardBackground(ctx: android.content.Context, cardView: MaterialCardView) {
+        cardView.post {
+            val w = cardView.width
+            val h = cardView.height
+            if (w <= 0 || h <= 0) return@post
+            try {
+                val bmp = android.graphics.BitmapFactory.decodeResource(ctx.resources, R.drawable.card_bg)
+                val size = FrameLayout.LayoutParams(w, h)
+                val bgImage = ImageView(ctx).apply {
+                    setImageBitmap(bmp)
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    layoutParams = size
+                }
+                val scrim = android.view.View(ctx).apply {
+                    setBackgroundColor(0xD9FFFFFF.toInt()) // 85% white
+                    layoutParams = FrameLayout.LayoutParams(w, h)
+                }
+                // cardView's first child is `frame`; insert bg behind it (indices 0,1).
+                cardView.addView(bgImage, 0)
+                cardView.addView(scrim, 1)
+            } catch (e: Exception) {
+                Log.w(TAG, "attachCardBackground failed: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * The SDK's CardComponent hardcodes setCardBackgroundColor(white) and never reads a JSON
+     * backgroundColor, so it would cover the outer image+scrim. Walk the surface view tree and
+     * clear every MaterialCardView's background. Safe to call once after the surface view is
+     * added: CardComponent.onUpdateProperties only re-applies white when the Card's OWN props
+     * change, which the templates never do after creation.
+     */
+    private fun clearInnerCardBackgrounds(root: View) {
+        if (root is MaterialCardView) {
+            root.setCardBackgroundColor(Color.TRANSPARENT)
+        }
+        if (root is ViewGroup) {
+            for (i in 0 until root.childCount) {
+                clearInnerCardBackgrounds(root.getChildAt(i))
+            }
+        }
     }
 
     private fun dpToPx(dp: Float): Float {
@@ -323,12 +380,12 @@ class AGenUIFragment : Fragment() {
         }
     }
 
-    /** Flips the music card's play button glyph: ⏸ when playing, ▶ when paused. */
+    /** Flips the music card's play icon: "pause" when playing, "play" when paused. */
     private fun updateMusicPlayGlyph(playing: Boolean) {
         val entry = cards.lastOrNull { it.surface?.surfaceId == "music" } ?: return
         val surface = entry.surface ?: return
         try {
-            surface.updateComponent("play_txt", mapOf("text" to if (playing) "⏸" else "▶"))
+            surface.updateComponent("play_icon", mapOf("name" to if (playing) "pause" else "play"))
         } catch (e: Exception) {
             Log.w(TAG, "updateMusicPlayGlyph failed: ${e.message}")
         }

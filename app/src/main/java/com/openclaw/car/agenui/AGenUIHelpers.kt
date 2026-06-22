@@ -131,6 +131,36 @@ object AGenUIHelpers {
         return objects.joinToString("\n") { it.toString() }
     }
 
+    /**
+     * Outer card backgrounds are drawn by the app (image + scrim, see AGenUIFragment).
+     * Make every solid-white container (the main Column, etc.) transparent so the image
+     * shows through. Accent tints (#F5F3FF, #EFF6FF, …) are NOT pure white so they stay,
+     * giving the card subtle structure over the image.
+     */
+    fun patchCardBackgrounds(json: String): String {
+        val objects = parseJsonObjects(json)
+        if (objects.isEmpty()) return json
+        var mutated = false
+        for (obj in objects) {
+            val update = obj.optJSONObject("updateComponents") ?: continue
+            val components = update.optJSONArray("components") ?: continue
+            for (i in 0 until components.length()) {
+                val comp = components.optJSONObject(i) ?: continue
+                val bg = comp.optString("backgroundColor", "")
+                if (bg.equals("#FFFFFF", ignoreCase = true) ||
+                    bg.equals("#FFF", ignoreCase = true) ||
+                    bg.equals("white", ignoreCase = true) ||
+                    bg.equals("#FFFFFFFF", ignoreCase = true)
+                ) {
+                    comp.put("backgroundColor", "transparent")
+                    mutated = true
+                }
+            }
+        }
+        if (!mutated) return json
+        return objects.joinToString("\n") { it.toString() }
+    }
+
     fun processWeatherCard(json: String): WeatherCardResult? {
         var isWeather = false
         var condition = ""
