@@ -33,7 +33,11 @@ object AGenUIHelpers {
         "notifications", "payment", "person", "phone", "photo", "print",
         "refresh", "search", "send", "settings", "share", "shoppingcart",
         "star", "starhalf", "staroff", "upload", "visibility",
-        "visibilityoff", "warning"
+        "visibilityoff", "warning",
+        // media transport (SDK supports these but they were missing here, causing
+        // patchUnknownIcons to hide every icon on the music card)
+        "play", "pause", "skipprevious", "skipnext", "rewind", "fastforward",
+        "volumeup", "volumedown", "volumemute"
     )
 
     fun parseJsonObjects(text: String): List<JSONObject> {

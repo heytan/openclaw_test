@@ -26,8 +26,10 @@ import com.openclaw.car.OpenClawApp
 import com.openclaw.car.R
 import com.openclaw.car.agenui.AGenUIHelpers
 import com.openclaw.car.agenui.CardSnapshotBus
+import com.openclaw.car.music.BydMusicController
 import com.openclaw.car.widget.FlowLayout
 import org.json.JSONObject
+import java.io.File
 
 class AGenUIFragment : Fragment() {
 
@@ -195,11 +197,17 @@ class AGenUIFragment : Fragment() {
                         Log.i(TAG, "Surface view added: ${surface.surfaceId}")
                         cardsScroll?.post { cardsScroll?.fullScroll(View.FOCUS_DOWN) }
                         scheduleSnapshot(cardView, deleteBtn, surface.surfaceId)
+                        if (surface.surfaceId == "music") {
+                            startMusicStateSync(entry)
+                        }
                     }
                 }
             }
 
             override fun onDeleteSurface(surface: Surface) {
+                if (surface.surfaceId == "music") {
+                    stopMusicStateSync()
+                }
                 if (entry.surface == surface) {
                     activity?.runOnUiThread {
                         surfaceContainer.removeAllViews()
@@ -214,6 +222,10 @@ class AGenUIFragment : Fragment() {
 
             override fun surfaceSize(surfaceId: String): SurfaceSize? {
                 return cachedSurfaceSize
+            }
+
+            override fun onReceiveActionEvent(event: String) {
+                handleActionEvent(event)
             }
         }
 
@@ -249,6 +261,7 @@ class AGenUIFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        stopMusicStateSync()
         for (entry in cards) {
             try { entry.surfaceManager.destroy() } catch (_: Exception) {}
         }
@@ -270,6 +283,124 @@ class AGenUIFragment : Fragment() {
 
     private fun dpToPx(dp: Int): Int {
         return dpToPx(dp.toFloat()).toInt()
+    }
+
+    private fun handleActionEvent(event: String) {
+        Log.i(TAG, "Action event: $event")
+        try {
+            val json = JSONObject(event)
+            // SDK envelope: {"action":{"name":...,"sourceComponentId":...},"version":"v0.9"}
+            // The event name is nested under "action", NOT at the top level.
+            val name = json.optJSONObject("action")?.optString("name") ?: json.optString("name")
+            if (name.isEmpty()) {
+                Log.w(TAG, "handleActionEvent: no action name in event")
+                return
+            }
+            val ctx = context ?: run {
+                Log.w(TAG, "handleActionEvent: context is null")
+                return
+            }
+            when (name) {
+                "music_prev" -> BydMusicController.previous(ctx)
+                "music_next" -> BydMusicController.next(ctx)
+                "music_play_pause" -> {
+                    // One-shot state read (not polling). After toggling, flip the button
+                    // glyph ▶↔⏸ for click-driven visual feedback (the card is otherwise static).
+                    val nowPlaying = if (isMusicPlaying()) {
+                        BydMusicController.pause(ctx); false
+                    } else {
+                        BydMusicController.play(ctx); true
+                    }
+                    lastPlayClickAt = android.os.SystemClock.elapsedRealtime()
+                    updateMusicPlayGlyph(nowPlaying)
+                }
+                "music_vol_up" -> BydMusicController.volumeUp(ctx)
+                "music_vol_down" -> BydMusicController.volumeDown(ctx)
+                else -> Log.w(TAG, "Unknown action event: $name")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to handle action event", e)
+        }
+    }
+
+    /** Flips the music card's play button glyph: ⏸ when playing, ▶ when paused. */
+    private fun updateMusicPlayGlyph(playing: Boolean) {
+        val entry = cards.lastOrNull { it.surface?.surfaceId == "music" } ?: return
+        val surface = entry.surface ?: return
+        try {
+            surface.updateComponent("play_txt", mapOf("text" to if (playing) "⏸" else "▶"))
+        } catch (e: Exception) {
+            Log.w(TAG, "updateMusicPlayGlyph failed: ${e.message}")
+        }
+    }
+
+    /**
+     * Lightweight music-state sync (no progress bar / time / cover — those have no data source).
+     * Polls music-state.json at 1Hz and pushes only song title, artist, and the play/pause glyph.
+     * The glyph update is suppressed for a 3s grace window after a click so the instant click-driven
+     * flip doesn't get fought back by stale monitor data (monitor polls dumpsys every 3s).
+     */
+    private val musicSyncHandler = Handler(Looper.getMainLooper())
+    private var musicSyncRunnable: Runnable? = null
+    private var lastPlayClickAt = 0L
+    private var lastSong: String? = null
+    private var lastArtist: String? = null
+
+    private fun startMusicStateSync(entry: CardEntry) {
+        stopMusicStateSync()
+        val runnable = object : Runnable {
+            override fun run() {
+                pushMusicState(entry)
+                musicSyncHandler.postDelayed(this, 1000)
+            }
+        }
+        musicSyncRunnable = runnable
+        musicSyncHandler.post(runnable)
+    }
+
+    private fun stopMusicStateSync() {
+        musicSyncRunnable?.let { musicSyncHandler.removeCallbacks(it) }
+        musicSyncRunnable = null
+    }
+
+    private fun pushMusicState(entry: CardEntry) {
+        val surface = entry.surface ?: return
+        try {
+            val file = File("/data/local/tmp/music-state.json")
+            if (!file.exists()) return
+            val state = JSONObject(file.readText(Charsets.UTF_8))
+            val title = state.optString("title", "")
+            val artist = state.optString("artist", "")
+            val isPlaying = state.optString("state") == "playing"
+            // Only push title/artist when they actually change (avoid spamming the surface).
+            if (title.isNotEmpty() && title != lastSong) {
+                surface.updateComponent("song", mapOf("text" to title))
+                lastSong = title
+            }
+            if (artist.isNotEmpty() && artist != lastArtist) {
+                surface.updateComponent("artist", mapOf("text" to artist))
+                lastArtist = artist
+            }
+            // Glyph: skip during the post-click grace window to avoid flicker with the click flip.
+            val sinceClick = android.os.SystemClock.elapsedRealtime() - lastPlayClickAt
+            if (sinceClick > 3000) {
+                updateMusicPlayGlyph(isPlaying)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "pushMusicState failed: ${e.message}")
+        }
+    }
+
+    private fun isMusicPlaying(): Boolean {
+        return try {
+            val file = File("/data/local/tmp/music-state.json")
+            if (!file.exists()) return false
+            val state = JSONObject(file.readText(Charsets.UTF_8))
+            state.optString("state") == "playing"
+        } catch (e: Exception) {
+            Log.w(TAG, "isMusicPlaying failed: ${e.message}")
+            false
+        }
     }
 
     private val snapshotHandler = Handler(Looper.getMainLooper())
