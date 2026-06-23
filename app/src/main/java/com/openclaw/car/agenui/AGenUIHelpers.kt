@@ -1,14 +1,79 @@
 package com.openclaw.car.agenui
 
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.util.Log
+import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.ImageView
 import com.amap.agenui.render.surface.SurfaceSize
+import com.google.android.material.card.MaterialCardView
 import com.openclaw.car.R
 import org.json.JSONObject
 
 /**
- * A2UI JSON 处理工具：图标白名单过滤、Image 缺失尺寸补丁、天气卡主题适配。
- * AGenUIFragment 与 BackgroundCardRenderActivity 共用同一份逻辑，避免两处漂移。
+ * A2UI JSON 处理工具：图标白名单过滤、Image 缺失尺寸补丁、天气卡主题适配、卡片背景图。
+ * AGenUIFragment、BackgroundCardRenderActivity、InteractiveCardActivity 共用同一份逻辑，避免漂移。
  */
 object AGenUIHelpers {
+
+    /**
+     * Adds bg image + 0.85 white scrim behind the surface content, as the first children of the
+     * card. Done in a post() so the card is already laid out to its content-driven size; the bg
+     * views get that EXACT size (not MATCH_PARENT), so they don't feed back into measure and
+     * inflate the WRAP_CONTENT card.
+     */
+    fun attachCardBackground(ctx: Context, cardView: MaterialCardView) {
+        cardView.post {
+            val w = cardView.width
+            val h = cardView.height
+            if (w <= 0 || h <= 0) return@post
+            try {
+                val bmp = BitmapFactory.decodeResource(ctx.resources, R.drawable.card_bg)
+                val bgImage = ImageView(ctx).apply {
+                    setImageBitmap(bmp)
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    layoutParams = FrameLayout.LayoutParams(w, h)
+                }
+                val scrim = View(ctx).apply {
+                    setBackgroundColor(0xD9FFFFFF.toInt()) // 85% white
+                    layoutParams = FrameLayout.LayoutParams(w, h)
+                }
+                // cardView's first child is the content frame; insert bg behind it (indices 0,1).
+                cardView.addView(bgImage, 0)
+                cardView.addView(scrim, 1)
+                // Clip the rectangular bg image + scrim to the card's rounded corners. Without this
+                // they bleed past the radius — invisible on a white A2UI tab bg, but shows as a
+                // white square halo when the card floats over the bubble's dark background.
+                cardView.clipChildren = true
+                cardView.clipToOutline = true
+                cardView.invalidate()
+            } catch (e: Exception) {
+                Log.w("AGenUIHelpers", "attachCardBackground failed: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * The SDK's CardComponent hardcodes setCardBackgroundColor(white) and never reads a JSON
+     * backgroundColor, so it would cover the outer image+scrim. Walk the surface view tree and
+     * clear every MaterialCardView's background. Safe to call once after the surface view is
+     * added: CardComponent.onUpdateProperties only re-applies white when the Card's OWN props
+     * change, which the templates never do after creation.
+     */
+    fun clearInnerCardBackgrounds(root: View) {
+        if (root is MaterialCardView) {
+            root.setCardBackgroundColor(Color.TRANSPARENT)
+        }
+        if (root is ViewGroup) {
+            for (i in 0 until root.childCount) {
+                clearInnerCardBackgrounds(root.getChildAt(i))
+            }
+        }
+    }
 
     data class WeatherTheme(
         val cardBg: String,

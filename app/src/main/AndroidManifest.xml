@@ -63,6 +63,14 @@
             android:screenOrientation="landscape"
             android:exported="false" />
 
+        <activity
+            android:name=".agenui.InteractiveCardActivity"
+            android:theme="@style/Theme.TransparentBackground"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:exported="false" />
+
         <!-- Foreground service for gateway + Node.js processes -->
         <service
             android:name=".service.NodeProcessService"

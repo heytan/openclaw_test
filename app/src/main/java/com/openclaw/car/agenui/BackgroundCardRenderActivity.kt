@@ -83,6 +83,7 @@ class BackgroundCardRenderActivity : AppCompatActivity() {
             finish()
             return
         }
+        LatestCardJson.json = json
         Log.i(TAG, "onCreate: json length=${json.length}")
 
         val dm = resources.displayMetrics

@@ -26,10 +26,10 @@ import com.openclaw.car.OpenClawApp
 import com.openclaw.car.R
 import com.openclaw.car.agenui.AGenUIHelpers
 import com.openclaw.car.agenui.CardSnapshotBus
-import com.openclaw.car.music.BydMusicController
+import com.openclaw.car.agenui.LatestCardJson
+import com.openclaw.car.agenui.MusicCardController
 import com.openclaw.car.widget.FlowLayout
 import org.json.JSONObject
-import java.io.File
 
 class AGenUIFragment : Fragment() {
 
@@ -50,6 +50,8 @@ class AGenUIFragment : Fragment() {
     private val cards = mutableListOf<CardEntry>()
     private var cardsContainer: FlowLayout? = null
     private var cardsScroll: ScrollView? = null
+
+    private val musicController = MusicCardController(TAG)
 
     @Volatile
     private var cachedSurfaceSize: SurfaceSize? = null
@@ -104,6 +106,7 @@ class AGenUIFragment : Fragment() {
     }
 
     fun receiveA2UI(json: String) {
+        LatestCardJson.json = json
         if (Looper.myLooper() == Looper.getMainLooper()) {
             cardJsonHistory.add(json)
             renderCard(json)
@@ -197,14 +200,16 @@ class AGenUIFragment : Fragment() {
                         Log.i(TAG, "Surface view added: ${surface.surfaceId}")
                         // SDK CardComponent hardcodes a white card background; make it
                         // transparent so the outer image+scrim shows.
-                        clearInnerCardBackgrounds(view)
+                        AGenUIHelpers.clearInnerCardBackgrounds(view)
                         // Add bg image + scrim behind the surface content, sized to the card's
                         // real measured size (post-layout, explicit size → no measure inflation).
-                        attachCardBackground(ctx, cardView)
+                        AGenUIHelpers.attachCardBackground(ctx, cardView)
+                        // Record the card's width so the bubble card can match it (consistent bg crop).
+                        cardView.post { LatestCardJson.cardWidth = cardView.width }
                         cardsScroll?.post { cardsScroll?.fullScroll(View.FOCUS_DOWN) }
                         scheduleSnapshot(cardView, deleteBtn, surface.surfaceId)
                         if (surface.surfaceId == "music") {
-                            startMusicStateSync(entry)
+                            musicController.startSync { entry.surface }
                         }
                     }
                 }
@@ -212,7 +217,7 @@ class AGenUIFragment : Fragment() {
 
             override fun onDeleteSurface(surface: Surface) {
                 if (surface.surfaceId == "music") {
-                    stopMusicStateSync()
+                    musicController.stopSync()
                 }
                 if (entry.surface == surface) {
                     activity?.runOnUiThread {
@@ -231,7 +236,9 @@ class AGenUIFragment : Fragment() {
             }
 
             override fun onReceiveActionEvent(event: String) {
-                handleActionEvent(event)
+                val ctx2 = context
+                if (ctx2 == null) { Log.w(TAG, "onReceiveActionEvent: context null"); return }
+                musicController.handleActionEvent(ctx2, event) { entry.surface }
             }
         }
 
@@ -268,7 +275,7 @@ class AGenUIFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        stopMusicStateSync()
+        musicController.stopSync()
         for (entry in cards) {
             try { entry.surfaceManager.destroy() } catch (_: Exception) {}
         }
@@ -281,56 +288,6 @@ class AGenUIFragment : Fragment() {
         super.onDestroyView()
     }
 
-    /**
-     * Adds bg image + 0.85 white scrim behind the surface content, as the first children of the
-     * card. Done in a post() so the card is already laid out to its content-driven size; the bg
-     * views get that EXACT size (not MATCH_PARENT), so they don't feed back into measure and
-     * inflate the WRAP_CONTENT card.
-     */
-    private fun attachCardBackground(ctx: android.content.Context, cardView: MaterialCardView) {
-        cardView.post {
-            val w = cardView.width
-            val h = cardView.height
-            if (w <= 0 || h <= 0) return@post
-            try {
-                val bmp = android.graphics.BitmapFactory.decodeResource(ctx.resources, R.drawable.card_bg)
-                val size = FrameLayout.LayoutParams(w, h)
-                val bgImage = ImageView(ctx).apply {
-                    setImageBitmap(bmp)
-                    scaleType = ImageView.ScaleType.CENTER_CROP
-                    layoutParams = size
-                }
-                val scrim = android.view.View(ctx).apply {
-                    setBackgroundColor(0xD9FFFFFF.toInt()) // 85% white
-                    layoutParams = FrameLayout.LayoutParams(w, h)
-                }
-                // cardView's first child is `frame`; insert bg behind it (indices 0,1).
-                cardView.addView(bgImage, 0)
-                cardView.addView(scrim, 1)
-            } catch (e: Exception) {
-                Log.w(TAG, "attachCardBackground failed: ${e.message}")
-            }
-        }
-    }
-
-    /**
-     * The SDK's CardComponent hardcodes setCardBackgroundColor(white) and never reads a JSON
-     * backgroundColor, so it would cover the outer image+scrim. Walk the surface view tree and
-     * clear every MaterialCardView's background. Safe to call once after the surface view is
-     * added: CardComponent.onUpdateProperties only re-applies white when the Card's OWN props
-     * change, which the templates never do after creation.
-     */
-    private fun clearInnerCardBackgrounds(root: View) {
-        if (root is MaterialCardView) {
-            root.setCardBackgroundColor(Color.TRANSPARENT)
-        }
-        if (root is ViewGroup) {
-            for (i in 0 until root.childCount) {
-                clearInnerCardBackgrounds(root.getChildAt(i))
-            }
-        }
-    }
-
     private fun dpToPx(dp: Float): Float {
         return TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, dp,
@@ -340,124 +297,6 @@ class AGenUIFragment : Fragment() {
 
     private fun dpToPx(dp: Int): Int {
         return dpToPx(dp.toFloat()).toInt()
-    }
-
-    private fun handleActionEvent(event: String) {
-        Log.i(TAG, "Action event: $event")
-        try {
-            val json = JSONObject(event)
-            // SDK envelope: {"action":{"name":...,"sourceComponentId":...},"version":"v0.9"}
-            // The event name is nested under "action", NOT at the top level.
-            val name = json.optJSONObject("action")?.optString("name") ?: json.optString("name")
-            if (name.isEmpty()) {
-                Log.w(TAG, "handleActionEvent: no action name in event")
-                return
-            }
-            val ctx = context ?: run {
-                Log.w(TAG, "handleActionEvent: context is null")
-                return
-            }
-            when (name) {
-                "music_prev" -> BydMusicController.previous(ctx)
-                "music_next" -> BydMusicController.next(ctx)
-                "music_play_pause" -> {
-                    // One-shot state read (not polling). After toggling, flip the button
-                    // glyph ▶↔⏸ for click-driven visual feedback (the card is otherwise static).
-                    val nowPlaying = if (isMusicPlaying()) {
-                        BydMusicController.pause(ctx); false
-                    } else {
-                        BydMusicController.play(ctx); true
-                    }
-                    lastPlayClickAt = android.os.SystemClock.elapsedRealtime()
-                    updateMusicPlayGlyph(nowPlaying)
-                }
-                "music_vol_up" -> BydMusicController.volumeUp(ctx)
-                "music_vol_down" -> BydMusicController.volumeDown(ctx)
-                else -> Log.w(TAG, "Unknown action event: $name")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to handle action event", e)
-        }
-    }
-
-    /** Flips the music card's play icon: "pause" when playing, "play" when paused. */
-    private fun updateMusicPlayGlyph(playing: Boolean) {
-        val entry = cards.lastOrNull { it.surface?.surfaceId == "music" } ?: return
-        val surface = entry.surface ?: return
-        try {
-            surface.updateComponent("play_icon", mapOf("name" to if (playing) "pause" else "play"))
-        } catch (e: Exception) {
-            Log.w(TAG, "updateMusicPlayGlyph failed: ${e.message}")
-        }
-    }
-
-    /**
-     * Lightweight music-state sync (no progress bar / time / cover — those have no data source).
-     * Polls music-state.json at 1Hz and pushes only song title, artist, and the play/pause glyph.
-     * The glyph update is suppressed for a 3s grace window after a click so the instant click-driven
-     * flip doesn't get fought back by stale monitor data (monitor polls dumpsys every 3s).
-     */
-    private val musicSyncHandler = Handler(Looper.getMainLooper())
-    private var musicSyncRunnable: Runnable? = null
-    private var lastPlayClickAt = 0L
-    private var lastSong: String? = null
-    private var lastArtist: String? = null
-
-    private fun startMusicStateSync(entry: CardEntry) {
-        stopMusicStateSync()
-        val runnable = object : Runnable {
-            override fun run() {
-                pushMusicState(entry)
-                musicSyncHandler.postDelayed(this, 1000)
-            }
-        }
-        musicSyncRunnable = runnable
-        musicSyncHandler.post(runnable)
-    }
-
-    private fun stopMusicStateSync() {
-        musicSyncRunnable?.let { musicSyncHandler.removeCallbacks(it) }
-        musicSyncRunnable = null
-    }
-
-    private fun pushMusicState(entry: CardEntry) {
-        val surface = entry.surface ?: return
-        try {
-            val file = File("/data/local/tmp/music-state.json")
-            if (!file.exists()) return
-            val state = JSONObject(file.readText(Charsets.UTF_8))
-            val title = state.optString("title", "")
-            val artist = state.optString("artist", "")
-            val isPlaying = state.optString("state") == "playing"
-            // Only push title/artist when they actually change (avoid spamming the surface).
-            if (title.isNotEmpty() && title != lastSong) {
-                surface.updateComponent("song", mapOf("text" to title))
-                lastSong = title
-            }
-            if (artist.isNotEmpty() && artist != lastArtist) {
-                surface.updateComponent("artist", mapOf("text" to artist))
-                lastArtist = artist
-            }
-            // Glyph: skip during the post-click grace window to avoid flicker with the click flip.
-            val sinceClick = android.os.SystemClock.elapsedRealtime() - lastPlayClickAt
-            if (sinceClick > 3000) {
-                updateMusicPlayGlyph(isPlaying)
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "pushMusicState failed: ${e.message}")
-        }
-    }
-
-    private fun isMusicPlaying(): Boolean {
-        return try {
-            val file = File("/data/local/tmp/music-state.json")
-            if (!file.exists()) return false
-            val state = JSONObject(file.readText(Charsets.UTF_8))
-            state.optString("state") == "playing"
-        } catch (e: Exception) {
-            Log.w(TAG, "isMusicPlaying failed: ${e.message}")
-            false
-        }
     }
 
     private val snapshotHandler = Handler(Looper.getMainLooper())
