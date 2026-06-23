@@ -30,8 +30,6 @@ import com.openclaw.car.MainActivity
 import com.openclaw.car.OpenClawApp
 import com.openclaw.car.R
 import com.openclaw.car.agenui.CardSnapshotBus
-import com.openclaw.car.agenui.InteractiveCardActivity
-import com.openclaw.car.agenui.LatestCardJson
 import com.openclaw.car.audio.AudioRecorder
 import com.openclaw.car.audio.BydAsrMonitor
 import com.openclaw.car.audio.FillerAudioPlayer
@@ -197,21 +195,6 @@ class FloatingBubbleService : Service() {
 
     private fun onA2UIMessage(msg: A2UIMessage) {
         handler.post {
-            // Bubble expanded with an interactive card: refresh it in place with the new card
-            // (the fragment/BackgroundCardRender are behind the interactive activity and would
-            // show stale otherwise — e.g. "next song" or "weather" while expanded).
-            if (isExpanded && InteractiveCardActivity.instance != null) {
-                LatestCardJson.json = msg.content
-                InteractiveCardActivity.instance?.finish()
-                // Relaunch directly — don't wait for instance==null (finish() is async; the old
-                // activity's onDestroy guards `if (instance === this)` so it won't clobber the
-                // new instance). A small delay lets the old surface tear down before the new one.
-                expandedView?.postDelayed({
-                    if (isExpanded) launchInteractiveCard()
-                }, 150)
-                Log.i(TAG, "A2UI refresh: interactive card relaunched, length=${msg.content.length}")
-                return@post
-            }
             val fragment = AGenUIFragment.instance
             // MainActivity 不在前台时，fragment 即使存活，SurfaceManager 的 native 渲染也会
             // 被 activity 的 paused 状态拖累：cardView 没法正常布局，scheduleSnapshot 在
@@ -369,30 +352,9 @@ class FloatingBubbleService : Service() {
         }
 
         updateExpandedContent()
-        // If a card is present, reserve the snapshot_card slot BEFORE addView so the bubble window
-        // is measured + sized to contain the card from the start (growing a WRAP_CONTENT overlay
-        // window after addView is unreliable — that was the containment bug).
-        val hasCard = LatestCardJson.json != null
-        if (hasCard) {
-            val slot = expandedView!!.findViewById<FrameLayout>(R.id.snapshot_card)
-            val iv = expandedView!!.findViewById<ImageView>(R.id.snapshot_image)
-            slot?.visibility = View.VISIBLE
-            // NOTE: snapshot_card's parent is a LinearLayout, so its layoutParams is
-            // LinearLayout.LayoutParams — don't cast to FrameLayout.LayoutParams (silently fails).
-            // Set height via the base type directly.
-            slot?.let {
-                val lp = it.layoutParams
-                lp.height = (resources.displayMetrics.density * 132).toInt() // matches music card height
-                it.layoutParams = lp
-            }
-            iv?.visibility = View.INVISIBLE
-        }
         windowManager.addView(expandedView, params)
         unreadCount = 0
-        if (!hasCard) refreshSnapshotUi()
-        if (hasCard) {
-            expandedView?.post { launchInteractiveCard() }
-        }
+        refreshSnapshotUi()
     }
 
     /**
@@ -402,36 +364,10 @@ class FloatingBubbleService : Service() {
      * and shows through the now-empty slot; touches pass through the non-clickable, FLAG_NOT_FOCUSABLE
      * overlay to the live card's buttons.
      */
-    private fun launchInteractiveCard() {
-        val view = expandedView ?: return
-        val json = LatestCardJson.json ?: return
-        val card = view.findViewById<FrameLayout>(R.id.snapshot_card) ?: return
-        val bubbleWidthPx = (resources.displayMetrics.widthPixels * 0.5).toInt()
-        val slotWidth = if (card.width > 0) card.width else bubbleWidthPx - (resources.displayMetrics.density * 20).toInt()
-        card.post {
-            if (!isExpanded) return@post
-            val loc = IntArray(2)
-            card.getLocationOnScreen(loc)
-            loc[1] += 3
-            val w = LatestCardJson.cardWidth ?: if (card.width > 0) card.width else slotWidth
-            val intent = Intent(this, InteractiveCardActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                putExtra(InteractiveCardActivity.EXTRA_CARD_JSON, json)
-                putExtra(InteractiveCardActivity.EXTRA_CARD_X, loc[0])
-                putExtra(InteractiveCardActivity.EXTRA_CARD_Y, loc[1])
-                putExtra(InteractiveCardActivity.EXTRA_CARD_W, w)
-            }
-            startActivity(intent)
-            expandedParams?.let { ep -> cardSlotOffsetX = loc[0] - ep.x; cardSlotOffsetY = loc[1] - ep.y }
-        }
-    }
-
     private fun collapse() {
         if (!isExpanded) return
         if (isRecording) stopRecording()
         isExpanded = false
-        InteractiveCardActivity.moveListener = null
-        InteractiveCardActivity.instance?.finish()
         expandedParams = null
         cardSlotOffsetX = 0
         cardSlotOffsetY = 0
@@ -700,7 +636,6 @@ class FloatingBubbleService : Service() {
                     params.x = initialX + dx.toInt()
                     params.y = initialY + dy.toInt()
                     windowManager.updateViewLayout(view, params)
-                    if (isExpanded) { InteractiveCardActivity.moveListener?.invoke(params.x + cardSlotOffsetX, params.y + cardSlotOffsetY) }
                 }
                 MotionEvent.ACTION_UP -> {
                     lastPosX = params.x
